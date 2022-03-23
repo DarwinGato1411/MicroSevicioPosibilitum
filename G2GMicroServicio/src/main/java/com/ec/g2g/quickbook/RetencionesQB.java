@@ -231,8 +231,8 @@ public class RetencionesQB {
 				numFactura = separaNumero[2];
 			}
 
-			Optional<CabeceraCompra> cabeceraComprasRecup = compraRepository.findByCabNumFactura(numFactura);
-			if (!cabeceraComprasRecup.isPresent()) {
+//			Optional<CabeceraCompra> cabeceraComprasRecup = compraRepository.findByCabNumFactura(numFactura);
+//			if (!cabeceraComprasRecup.isPresent()) {
 				System.out.println("INSERTA LA CABECERA DE COMPRA NUEVA");
 				cabeceraCompra.setCabNumFactura(numFactura);
 				cabeceraCompra.setCabFecha(vendorCredit.getMetaData().getCreateTime());
@@ -250,10 +250,10 @@ public class RetencionesQB {
 				cabeceraCompra.setCabPuntoEmi(puntoEmision);
 				compraRepository.save(cabeceraCompra);
 
-			} else {
-				cabeceraCompra = cabeceraComprasRecup.get();
-				System.out.println("ACTUALIZA LA COMPRA PARA CREAR UNA NUEVA RETENCION");
-			}
+//			} else {
+//				cabeceraCompra = cabeceraComprasRecup.get();
+//				System.out.println("ACTUALIZA LA COMPRA PARA CREAR UNA NUEVA RETENCION");
+//			}
 
 			/* INICIA RETENCION */
 			RetencionCompra retecionRecup = findUltimoSecuencial().size() > 0 ? findUltimoSecuencial().get(0) : null;
