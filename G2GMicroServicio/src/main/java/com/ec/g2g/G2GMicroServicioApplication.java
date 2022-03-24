@@ -36,6 +36,7 @@ import com.ec.g2g.entidad.Tipoambiente;
 import com.ec.g2g.entidad.Usuario;
 import com.ec.g2g.global.ValoresGlobales;
 import com.ec.g2g.quickbook.ManejarToken;
+import com.ec.g2g.quickbook.NotasCreditoQB;
 //import com.ec.g2g.quickbook.NotasCreditoQB;
 import com.ec.g2g.quickbook.QBOServiceHelper;
 import com.ec.g2g.quickbook.RetencionesQB;
@@ -131,6 +132,9 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	/* RETENCIOONES */
 	@Autowired
 	private RetencionesQB retencionesQB;
+	@Autowired
+	private NotasCreditoQB creditoQB;
+	
 	/* RETENCIOONES */
 	/*
 	 * @Autowired private NotasCreditoQB notasCreditoQB;
@@ -291,7 +295,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	}
 
 //dejarlo cada 8 minutos
-	@Scheduled(fixedRate = 8 * 60 * 1000)
+	@Scheduled(fixedRate = 6 * 60 * 1000)
 	public void tareaProcesaFacturas() {
 		RestTemplate restTemplate = new RestTemplate();
 		RespuestaDocumentos respueta = restTemplate.getForObject(serviceURLFACTURAS + RUCEMPRESA,
@@ -310,12 +314,11 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	}
 
 	/* Tiempo de notas de credito */
-	/*
-	 * @Scheduled(fixedRate = 12 * 60 * 1000) public void tareaNotaCredito() {
-	 * System.out.
-	 * println("OBTIENE LOS DOCUMENTOS CADA 12 MINUTOS NOTAS DE CREDITRO : "); //
-	 * notasCreditoQB.obtenerRetenciones(); }
-	 */
+	@Scheduled(fixedRate = 4 * 60 * 1000)
+	public void tareanotaCredito() {
+		System.out.println("OBTIENE LOS DOCUMENTOS CADA 10 MINUTOS RETENCIONES : ");
+		creditoQB.obtenerNotaCredito();
+	}
 
 	/* Tiempo de facturas */
 	@Scheduled(fixedRate = 3 * 60 * 1000)
@@ -360,14 +363,10 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 				String WHERE = "";
 				String ORDERBY = " ORDER BY DocNumber ASC";
 
-				if (valoresGlobales.getTIPOAMBIENTE().getAmCargaInicial()) {
+			
 					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdFacturaInicio()
 							+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
-					// + "' AND MetaData.CreateTime >= '2021-11-04' ";
-				} else {
-
-					WHERE = " WHERE MetaData.CreateTime >= '" + format.format(new Date()) + "'";
-				}
+				
 
 				String sql = "select * from invoice ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;

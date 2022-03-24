@@ -23,4 +23,6 @@ public interface NotaCreditoRepository extends CrudRepository<NotaCreditoDebito,
 
 	/* consulta por numero de factura u cliente */
 
+	@Query("SELECT u FROM NotaCreditoDebito u WHERE  u.txnId =:txnId  and u.codTipoambiente =:codTipoambiente")
+	Optional<NotaCreditoDebito>findByTxnId(@Param("txnId") Integer idQuick, @Param("codTipoambiente") Integer amRuc);
 }

@@ -147,6 +147,17 @@ public class NotaCreditoDebito implements Serializable {
     @ManyToOne
     private Factura idFactura;
 
+    @Column(name = "numero_factura")
+    private String numeroFactura;
+    
+    
+    @Column(name = "fecha_emision_factura")
+    @Temporal(TemporalType.DATE)
+    private Date fechaEmisionFactura;
+    
+    @Column(name = "txn_id")
+    private Integer txnId;
+    
     public NotaCreditoDebito() {
     }
 
@@ -484,7 +495,35 @@ public class NotaCreditoDebito implements Serializable {
     }
     
 
-    @Override
+ 
+
+	public String getNumeroFactura() {
+		return numeroFactura;
+	}
+
+	public void setNumeroFactura(String numeroFactura) {
+		this.numeroFactura = numeroFactura;
+	}
+
+	public Date getFechaEmisionFactura() {
+		return fechaEmisionFactura;
+	}
+
+	public void setFechaEmisionFactura(Date fechaEmisionFactura) {
+		this.fechaEmisionFactura = fechaEmisionFactura;
+	}
+	
+	
+
+	public Integer getTxnId() {
+		return txnId;
+	}
+
+	public void setTxnId(Integer txnId) {
+		this.txnId = txnId;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 0;
         hash += (idNota != null ? idNota.hashCode() : 0);

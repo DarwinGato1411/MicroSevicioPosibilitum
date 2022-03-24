@@ -2,6 +2,7 @@ package com.ec.g2g.quickbook;
 
 import java.math.BigDecimal;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -117,18 +118,23 @@ public class RetencionesQB {
 		// String accessToken = valoresGlobales.TOKEN;
 		String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
 		try {
+			
+			Date fechaConsulta = new Date();
+			Calendar c = Calendar.getInstance();
+			c.setTime(fechaConsulta);
+			// reta loos dias que necesitas
+			c.add(Calendar.DATE, -5);
+			fechaConsulta = c.getTime();
+			
 			if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
 				// get DataService
 				DataService service = helper.getDataService(realmId, accessToken);
 				String WHERE = "";
 				String ORDERBY = " ORDER BY Id ASC";
-				if (valoresGlobales.getTIPOAMBIENTE().getAmCargaInicial()) {
-					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio() + "'";
-					// + "' AND MetaData.CreateTime >= '2021-11-04' ";
-				} else {
-
-					WHERE = " WHERE MetaData.CreateTime >= '" + format.format(new Date()) + "'";
-				}
+				
+					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio() 
+					+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
+				
 
 				String sql = "select * from vendorcredit ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;

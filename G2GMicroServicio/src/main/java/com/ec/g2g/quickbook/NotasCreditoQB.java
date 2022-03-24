@@ -1,63 +1,55 @@
 package com.ec.g2g.quickbook;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
+import java.util.Calendar;
 import java.util.Date;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Optional;
 
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
 
+import org.apache.commons.lang.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import com.ec.g2g.ModelIdentificacion;
-import com.ec.g2g.entidad.CabeceraCompra;
 import com.ec.g2g.entidad.DetalleNotaDebitoCredito;
-import com.ec.g2g.entidad.DetalleRetencionCompra;
-import com.ec.g2g.entidad.EstadoFacturas;
 import com.ec.g2g.entidad.Factura;
 import com.ec.g2g.entidad.NotaCreditoDebito;
-import com.ec.g2g.entidad.Proveedores;
-import com.ec.g2g.entidad.RetencionCompra;
-import com.ec.g2g.entidad.TipoIdentificacionCompra;
-import com.ec.g2g.entidad.TipoRetencion;
+import com.ec.g2g.entidad.Producto;
 import com.ec.g2g.entidad.Tipoambiente;
-import com.ec.g2g.entidad.Tipoivaretencion;
 import com.ec.g2g.global.ValoresGlobales;
-import com.ec.g2g.repository.CompraRepository;
 import com.ec.g2g.repository.DetalleNotaCreditoRepository;
-import com.ec.g2g.repository.DetalleRetencionCompraRepository;
-import com.ec.g2g.repository.EstadoFacturaRepository;
 import com.ec.g2g.repository.FacturaRepository;
 import com.ec.g2g.repository.NotaCreditoRepository;
-import com.ec.g2g.repository.ProveedorRepository;
-import com.ec.g2g.repository.RetencionCompraRepository;
+import com.ec.g2g.repository.ProductoRepository;
 import com.ec.g2g.repository.TipoAmbienteRepository;
-import com.ec.g2g.repository.TipoIdentificacionCompraRepository;
-import com.ec.g2g.repository.TipoIvaRetencionRepository;
-import com.ec.g2g.repository.TipoRetencionRepository;
 import com.ec.g2g.utilitario.ArchivoUtils;
 import com.google.gson.Gson;
+import com.intuit.ipp.data.CustomField;
+import com.intuit.ipp.data.Error;
+import com.intuit.ipp.data.Item;
 import com.intuit.ipp.data.Line;
+import com.intuit.ipp.data.LineDetailTypeEnum;
+import com.intuit.ipp.data.MemoRef;
 import com.intuit.ipp.data.TaxCode;
 import com.intuit.ipp.data.TaxRate;
 import com.intuit.ipp.data.TaxRateDetail;
 import com.intuit.ipp.data.Vendor;
 import com.intuit.ipp.data.VendorCredit;
 import com.intuit.ipp.exception.FMSException;
+import com.intuit.ipp.exception.InvalidTokenException;
 import com.intuit.ipp.services.DataService;
 import com.intuit.ipp.services.QueryResult;
-
-import ch.qos.logback.core.joran.conditional.IfAction;
 
 @Service
 public class NotasCreditoQB {
 
-	@Autowired
+	@Autowired	
 	public QBOServiceHelper helper;
 
 	@Autowired
@@ -85,6 +77,9 @@ public class NotasCreditoQB {
 	@PersistenceContext
 	private EntityManager entityManager;
 
+	@Autowired
+	private ProductoRepository productoRepository;
+
 	public List<NotaCreditoDebito> findUltimoSecuencial() {
 		// cambiar la forma de traer el ultimo secuencial
 		return entityManager.createQuery(
@@ -109,18 +104,21 @@ public class NotasCreditoQB {
 		// String accessToken = valoresGlobales.TOKEN;
 		String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
 		try {
+//			SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+			Date fechaConsulta = new Date();
+			Calendar c = Calendar.getInstance();
+			c.setTime(fechaConsulta);
+			// reta loos dias que necesitas
+			c.add(Calendar.DATE, -5);
+			fechaConsulta = c.getTime();
+
 			if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
 				// get DataService
 				DataService service = helper.getDataService(realmId, accessToken);
 				String WHERE = "";
 				String ORDERBY = " ORDER BY Id ASC";
-				if (valoresGlobales.getTIPOAMBIENTE().getAmCargaInicial()) {
-					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio() + "'";
-					// + "' AND MetaData.CreateTime >= '2021-11-04' ";
-				} else {
-
-					WHERE = " WHERE MetaData.CreateTime >= '" + format.format(new Date()) + "'";
-				}
+				WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio()
+						+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
 
 				String sql = "select * from vendorcredit ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;
@@ -138,18 +136,21 @@ public class NotasCreditoQB {
 						String separaNumero[] = vendorCredit.getDocNumber().split("-");
 						String numeroRetencion = separaNumero[1];
 						/* VALIDAR SI EXISTE LA RETENCION */
-//						Optional<RetencionCompra> retencionValida = retencionCompraRepository
-//								.findByIdQuickOrRcoSecuencialText(Integer.valueOf(vendorCredit.getId()),
-//										numeroRetencion, valoresGlobales.getTIPOAMBIENTE().getAmRuc());
-//						if (!retencionValida.isPresent()) {
-//							System.out.println("PROCESANDO NOTAS DE CREDITO --> " + mapperVendorToNotaCredito(vendorCredit));
-//						} else {
-//							System.out.println("LA NOTA DE CREDITO YA EXISTE " + vendorCredit.getDocNumber().toUpperCase());
-//
-//						}
+						Optional<NotaCreditoDebito> verificaDoc = notaCreditoRepository.findByTxnId(
+								Integer.valueOf(vendorCredit.getId()),
+								valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente());
+						if (!verificaDoc.isPresent()) {
+							System.out.println(
+									"PROCESANDO NOTAS DE CREDITO --> " + mapperVendorToNotaCredito(vendorCredit));
+						} else {
+							System.out.println(
+									"LA NOTA DE CREDITO YA EXISTE " + vendorCredit.getDocNumber().toUpperCase());
+
+						}
 
 					} else {
-						System.out.println("RETENCION NO PROCESADA " + vendorCredit.getDocNumber());
+						System.out.println("RETENCION NO PROCESADA EL NUMERO DE FACTURA NO CUMPLE CON LA ESTRUCTURA "
+								+ vendorCredit.getDocNumber());
 
 					}
 
@@ -163,7 +164,15 @@ public class NotasCreditoQB {
 
 	private String mapperVendorToNotaCredito(VendorCredit vendorCredit) {
 		Gson gson = new Gson();
+		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
+
 		try {
+			String realmId = valoresGlobales.REALMID;
+			// String accessToken = valoresGlobales.TOKEN;
+			String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
+
+			// get DataService
+			DataService service = helper.getDataService(realmId, accessToken);
 
 			/* CREAMOS LA CABECERA DE COMPRA PARA PODER GENERAR LA RETENCION */
 
@@ -174,24 +183,303 @@ public class NotasCreditoQB {
 //			System.out.println("CABECERA DE COMPRA  "+cabeceraCompra);
 			// Obtiene el secuencial de la nota de credito
 			// crear un campom para el secuencial de nota de credito
-			Integer numeroRetencion = notaCreditoRecup != null ? notaCreditoRecup.getFacNumero() + 1
+			Integer numeroNotaCredito = notaCreditoRecup != null ? notaCreditoRecup.getFacNumero() + 1
 					: valoresGlobales.getTIPOAMBIENTE().getAmSecuencialInicioRetencion();
-			String numeroRetencionText = numeroFacturaTexto(numeroRetencion);
+			String numeroRetencionText = numeroFacturaTexto(numeroNotaCredito);
 			System.out.println("numeroRetencionText " + numeroRetencionText);
-			NotaCreditoDebito creditoDebito = new NotaCreditoDebito();
+			NotaCreditoDebito notacredito = new NotaCreditoDebito();
+			if (vendorCredit.getCustomField().size() > 0) {
+				for (CustomField etiquetas : vendorCredit.getCustomField()) {
+					if (etiquetas.getDefinitionId().equals("1")) {
+						try {
+							notacredito.setFechaEmisionFactura(format.parse(etiquetas.getStringValue()));
+							notacredito.setFacFechaSustento(format.parse(etiquetas.getStringValue()));
+						} catch (Exception e) {
+							// TODO: handle exception
+						}
+					} else if (etiquetas.getDefinitionId().equals("2")) {
+//						notacredito.setFacKilometraje(etiquetas.getStringValue());
+					} else if (etiquetas.getDefinitionId().equals("3")) {
+
+						notacredito.setNumeroFactura(etiquetas.getStringValue());
+					}
+
+				}
+			}
+
+			/* CALCULOS PARA IVA Y SIN IVA */
+			BigDecimal baseGrabada = BigDecimal.ZERO;
+			BigDecimal baseCero = BigDecimal.ZERO;
+			BigDecimal valorIva = BigDecimal.ZERO;
+			BigDecimal subtotalFac = BigDecimal.ZERO;
+			BigDecimal montoDescuento = BigDecimal.ZERO;
+			List<Line> itemsRefDesc = vendorCredit.getLine();
+			BigDecimal porcentajeDescuento = BigDecimal.ZERO;
+
+			BigDecimal valorSinDescuento = BigDecimal.ZERO;
+			for (Line item : itemsRefDesc) {
+
+				if (item.getDetailType() == LineDetailTypeEnum.DISCOUNT_LINE_DETAIL) {
+					montoDescuento = item.getAmount();
+
+					if (item.getDiscountLineDetail().isPercentBased()) {
+
+						porcentajeDescuento = item.getDiscountLineDetail() != null
+								? item.getDiscountLineDetail().getDiscountPercent()
+								: BigDecimal.ZERO;
+					}
+				}
+
+				if (item.getDetailType() == LineDetailTypeEnum.SUB_TOTAL_LINE_DETAIL) {
+//					.value().equals("SUB_TOTAL_LINE_DETAIL")
+					valorSinDescuento = valorSinDescuento.add(item.getAmount());
+				}
+
+			}
+
+			if (porcentajeDescuento == BigDecimal.ZERO) {
+
+				porcentajeDescuento = (montoDescuento.multiply(BigDecimal.valueOf(100)).divide(valorSinDescuento, 8,
+						RoundingMode.FLOOR));
+
+//				porcentajeDescuento = ArchivoUtils.redondearDecimales(porcentajeDescuento, 8);
+			}
+
+			for (Line valores : vendorCredit.getTxnTaxDetail().getTaxLine()) {
+				if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
+					baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
+				} else {
+					baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
+				}
+
+			}
+			valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
+
+			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroText(notacredito.getNumeroFactura());
+			if (facturaRecup.isEmpty()) {
+				return "No existe una factura para crear una nota de credito";
+			}
+			notacredito.setIdFactura(facturaRecup.get());
+			notacredito.setFacFecha(vendorCredit.getTxnDate());
 //			creditoDebito.setFacDescripcion(vendorCredit.get);
 			String claveAcceso = ArchivoUtils.generaClave(vendorCredit.getTxnDate(), "04",
 					valoresGlobales.getTIPOAMBIENTE().getAmRuc(), valoresGlobales.getTIPOAMBIENTE().getAmCodigo(),
 					valoresGlobales.getTIPOAMBIENTE().getAmEstab() + valoresGlobales.getTIPOAMBIENTE().getAmPtoemi(),
 					numeroRetencionText, "12345678", "1");
+			subtotalFac = baseGrabada.add(baseCero);
+			notacredito.setFacSubtotal(subtotalFac);
+			BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
+			notacredito.setFacTotal(valorTotalFact);
+			notacredito.setFacEstado("EM");
+			notacredito.setFacTipo("NCRE");
+			notacredito.setFacAbono(BigDecimal.ZERO);
+			notacredito.setFacSaldo(BigDecimal.ZERO);
+			notacredito.setFacDescripcion("NC QUICKBOOKS");
+			notacredito.setFacNumProforma(0);
+			notacredito.setTipodocumento("04");
+			notacredito.setPuntoemision(valoresGlobales.TIPOAMBIENTE.getAmPtoemi());
+			notacredito.setCodestablecimiento(valoresGlobales.TIPOAMBIENTE.getAmEstab());
 
-			//recorre todos los detalles de vendorcredit
-			for (Line detalleRet : vendorCredit.getLine()) {
+			notacredito.setFacNumeroText(numeroFacturaTexto(numeroNotaCredito));
+			notacredito.setFacDescuento(BigDecimal.ZERO);
+			notacredito.setFacCodIce("3");
+			notacredito.setFacCodIva("2");
+			notacredito.setFacTotalBaseCero(baseCero);
+			notacredito.setFacTotalBaseGravaba(baseGrabada);
+			notacredito.setCodigoPorcentaje("2");
+			notacredito.setFacPorcentajeIva("12");
+			notacredito.setFacMoneda(vendorCredit.getCurrencyRef().getValue());
 
-				DetalleNotaDebitoCredito detalle = new DetalleNotaDebitoCredito();
+			notacredito.setFacPlazo(BigDecimal.ZERO);
+			notacredito.setFacUnidadTiempo("DIAS");
+			notacredito.setEstadosri("PENDIENTE");
+			notacredito.setCodTipoambiente(valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente());
+			notacredito.setTipodocumentomod("01");
+			notacredito.setFacNumero(facturaRecup.get().getFacNumero());
+			notacredito.setFacClaveAcceso(claveAcceso);
+			notacredito.setFacClaveAutorizacion(claveAcceso);
+			notacredito.setTxnId(Integer.valueOf(vendorCredit.getId()));
+			// recorre todos los detalles de vendorcredit
+
+			Item itemProd = null;
+			Producto producto = new Producto();
+			DetalleNotaDebitoCredito detalle = new DetalleNotaDebitoCredito();
+			for (Line item : vendorCredit.getLine()) {
+
+				detalle = new DetalleNotaDebitoCredito();
 				detalle.setIdNota(notaCreditoRecup);
+
+				if (item.getGroupLineDetail() != null) {
+					if (item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail() == null) {
+						System.out.println("getSalesItemLineDetail NULL ");
+						break;
+					}
+				} else {
+					if (item.getSalesItemLineDetail() == null) {
+						System.out.println("getSalesItemLineDetail NULL ");
+						break;
+					}
+				}
+
+				if (item.getGroupLineDetail() != null) {
+
+					itemProd = getProduct(item.getGroupLineDetail().getGroupItemRef() != null
+							? item.getGroupLineDetail().getGroupItemRef().getValue()
+							: "0");
+
+				} else {
+					itemProd = getProduct(item.getSalesItemLineDetail() != null
+							? item.getSalesItemLineDetail().getItemRef().getValue()
+							: "0");
+
+				}
+
+				String JSONPRODCUTO = gson.toJson(itemProd);
+
+				System.out.println("JSONPRODCUTO " + JSONPRODCUTO);
+				if (itemProd == null) {
+					System.out.println("itemProd NULL ");
+					break;
+
+				}
+
+				producto = new Producto();
+
+				List<TaxRate> rateDetail = null;
+				TaxRate taxRatePorcet = null;
+
+				TaxCode taxCode = taxCodeQB.obtenerTaxCode(item.getGroupLineDetail() != null
+						? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getTaxCodeRef().getValue()
+						: item.getSalesItemLineDetail().getTaxCodeRef().getValue());
+
+				for (TaxRateDetail detail : taxCode.getSalesTaxRateList().getTaxRateDetail()) {
+//				JSONCLIENTE = gson.toJson(detail);
+
+					if (detail.getTaxRateRef().getName().contains("Ventas")) {
+						for (TaxRate taxrate : taxCodeQB.obtenerTaxRateDetail(detail.getTaxRateRef().getValue())) {
+							if (taxrate.getName().contains("Ventas")) {
+								taxRatePorcet = taxrate;
+							}
+
+						}
+					}
+
+				}
+
+				Boolean prodGrabaIva = taxRatePorcet != null
+						? taxRatePorcet.getRateValue().doubleValue() == 0 ? Boolean.FALSE : Boolean.TRUE
+						: Boolean.FALSE;
+
+				producto.setProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
+				producto.setProdNombre(itemProd.getDescription());
+				producto.setPordCostoCompra(BigDecimal.ZERO);
+				producto.setPordCostoVentaRef(BigDecimal.ZERO);
+				producto.setPordCostoVentaFinal(
+						prodGrabaIva
+								? (itemProd.getUnitPrice() == null ? BigDecimal.ZERO
+										: itemProd.getUnitPrice().multiply(valoresGlobales.IVA))
+								: itemProd.getUnitPrice());
+				producto.setProdEstado(1);
+				producto.setProdTrasnporte(BigDecimal.ZERO);
+				producto.setProdIva(BigDecimal.ZERO);
+				producto.setProdUtilidadNormal(BigDecimal.ZERO);
+				producto.setProdManoObra(BigDecimal.ZERO);
+				producto.setProdUtilidadPreferencial(BigDecimal.ZERO);
+				producto.setProdCostoPreferencial(BigDecimal.ZERO);
+				producto.setProdCostoPreferencialDos(BigDecimal.ZERO);
+				producto.setProdCostoPreferencialTres(BigDecimal.ZERO);
+				producto.setProdPrincipal(1);
+				producto.setProdAbreviado("S/N");
+				producto.setProdIsPrincipal(Boolean.FALSE);
+				producto.setPordCostoCompra(BigDecimal.ZERO);
+				producto.setProdCantidadInicial(0);
+				producto.setProdUtilidadDos(BigDecimal.ZERO);
+				producto.setProdCantMinima(BigDecimal.ZERO);
+				producto.setProdPathCodbar("");
+				producto.setProdImprimeCodbar(Boolean.FALSE);
+				producto.setProdGrabaIva(prodGrabaIva);
+				producto.setProdEsproducto(Boolean.FALSE);
+				producto.setProdSubsidio(BigDecimal.ZERO);
+				producto.setProdTieneSubsidio("N");
+				producto.setProdPrecioSinSubsidio(BigDecimal.ZERO);
+				producto.setProGlp("");
+				producto.setPordCostoPromedioCompra(BigDecimal.ZERO);
+				producto.setProdFactorConversion(BigDecimal.ONE);
+				producto.setProdUnidadMedida("UNIDAD");
+				producto.setProdUnidadConversion("UNIDAD");
+
+				Optional<Producto> prodRecup = productoRepository
+						.findByProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
+
+				if (prodRecup.isPresent()) {
+					detalle.setIdProducto(prodRecup.get());
+				} else {
+					productoRepository.save(producto);
+					detalle.setIdProducto(producto);
+				}
+
+				// revision con Paul es el campo getUnitPrice
+				BigDecimal precioUnitario = item.getGroupLineDetail() != null
+						? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getUnitPrice()
+						: item.getSalesItemLineDetail() != null ? item.getSalesItemLineDetail().getUnitPrice()
+								: BigDecimal.ZERO;
+				BigDecimal valorDescuento = BigDecimal.ZERO;
+				if (precioUnitario.doubleValue() > 0 && porcentajeDescuento.doubleValue() > 0) {
+					valorDescuento = precioUnitario.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100));
+				}
+
+				BigDecimal precioConDescuento = precioUnitario
+						.subtract(precioUnitario.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100)));
+				BigDecimal cantidadProductos = item.getGroupLineDetail() != null
+						? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
+						: item.getSalesItemLineDetail() != null ? item.getSalesItemLineDetail().getQty() != null
+								? item.getSalesItemLineDetail().getQty()
+								: BigDecimal.ONE : BigDecimal.ONE;
+
+				/* obtiene la cantidad dependiendo si es un item o grupo de items */
+				BigDecimal cantidad = item.getGroupLineDetail() != null
+						? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
+						: item.getSalesItemLineDetail().getQty();
+				detalle.setDetCantidad(cantidad);
+				detalle.setDetDescripcion(item.getDescription());
+				detalle.setDetSubtotal(precioUnitario);
+
+				BigDecimal ivaDet = BigDecimal.ZERO;
+
+				ivaDet = prodGrabaIva
+						? (precioConDescuento.multiply(valoresGlobales.SACARIVA).multiply(cantidadProductos))
+						: BigDecimal.ZERO;
+				detalle.setDetTotal(
+						prodGrabaIva ? precioConDescuento.multiply(valoresGlobales.SUMARIVA) : precioConDescuento);
+				detalle.setDetTipoVenta("NORMAL");
+//			System.out.println("det.getDetTotal() " + det.getDetTotal());
+//			System.out.println("cantidadProductos " + cantidadProductos);
+				detalle.setDetTotalconiva(detalle.getDetTotal().multiply(cantidadProductos));
+
+				detalle.setDetIva(prodGrabaIva ? ivaDet : BigDecimal.ZERO);
+				detalle.setDetPordescuento(ArchivoUtils.redondearDecimales(porcentajeDescuento, 4));
+				detalle.setDetValdescuento(valorDescuento);
+				detalle.setDetSubtotaldescuento(precioConDescuento);
+				detalle.setDetTotaldescuento(valorDescuento.multiply(cantidadProductos));
+				detalle.setDetTotaldescuentoiva(detalle.getDetTotal().multiply(cantidadProductos));
+				detalle.setDetCantpordescuento(valorDescuento.multiply(cantidadProductos));
+				detalle.setDetSubtotaldescuentoporcantidad(precioConDescuento.multiply(cantidadProductos));
+				detalle.setDetTipoVenta("0");
+//				/* Detalle de factura */
+				detalleNotaCreditoRepository.save(detalle);
+
 			}
 
+			/* REGISTRAR EL SECUENCIAL EN quICKbOOKS */
+			MemoRef memoRef = new MemoRef();
+			memoRef.setValue(claveAcceso);
+			/* Cambia el secuencial en la plataforma de QuickBooks */
+			vendorCredit.setDocNumber(numeroFacturaTexto(numeroNotaCredito));
+//			vendorCredit.setCustomerMemo(memoRef);
+//			vendorCredit.setAllowIPNPayment(Boolean.TRUE);
+			/* actualizo la factura en QB */
+			service.update(vendorCredit);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
@@ -253,6 +541,44 @@ public class NotasCreditoQB {
 			e.printStackTrace();
 		}
 		return validador;
+
+	}
+
+	// consultar producto
+	private Item getProduct(String value) {
+		String realmId = valoresGlobales.REALMID;
+		if (StringUtils.isEmpty(realmId)) {
+//				logger.info("No realm ID.  QBO calls only work if the accounting scope was passed!");
+			return null;
+		}
+		String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
+
+		try {
+
+			// Dataservice
+			DataService service = helper.getDataService(realmId, accessToken);
+			// System.out.println("CONSULYTA A PRODUCTO select * from Item where id =" +
+			// value);
+			// get all Facturas
+			String sql = "select * from Item where id = '" + value + "'";
+			QueryResult queryResult = service.executeQuery(sql);
+			Item resultado = (Item) (queryResult.getEntities().size() > 0 ? queryResult.getEntities().get(0) : null);
+			return resultado;
+		}
+		/*
+		 * Manejo de excepcion error de token
+		 */
+		catch (InvalidTokenException e) {
+//				logger.error("Error while calling executeQuery :: " + e.getMessage());
+			e.printStackTrace();
+			return null;
+
+		} catch (FMSException e) {
+			List<Error> list = e.getErrorList();
+//				list.forEach(error -> logger.error("Error while calling executeQuery :: " + error.getMessage()));
+			return null;
+
+		}
 
 	}
 }
