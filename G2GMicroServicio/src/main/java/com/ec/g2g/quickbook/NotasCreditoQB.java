@@ -30,6 +30,7 @@ import com.ec.g2g.repository.ProductoRepository;
 import com.ec.g2g.repository.TipoAmbienteRepository;
 import com.ec.g2g.utilitario.ArchivoUtils;
 import com.google.gson.Gson;
+import com.intuit.ipp.data.CreditMemo;
 import com.intuit.ipp.data.CustomField;
 import com.intuit.ipp.data.Error;
 import com.intuit.ipp.data.Item;
@@ -63,6 +64,7 @@ public class NotasCreditoQB {
 	NotaCreditoRepository notaCreditoRepository;
 	@Autowired
 	private FacturaRepository facturaRepository;
+	@Autowired
 	private DetalleNotaCreditoRepository detalleNotaCreditoRepository;
 
 	@Value("${posibilitum.nombre.empresa}")
@@ -83,8 +85,8 @@ public class NotasCreditoQB {
 	public List<NotaCreditoDebito> findUltimoSecuencial() {
 		// cambiar la forma de traer el ultimo secuencial
 		return entityManager.createQuery(
-				"SELECT p FROM NotaCreditoDebitos p WHERE p.codTipoambiente.amRuc=:amRuc ORDER BY p.rcoSecuencial DESC",
-				NotaCreditoDebito.class).setParameter("amRuc", RUCEMPRESA).setMaxResults(1).getResultList();
+				"SELECT u FROM NotaCreditoDebito u WHERE u.codTipoambiente =:codTipoambiente ORDER BY u.facNumero DESC",
+				NotaCreditoDebito.class).setParameter("codTipoambiente", valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente()).setMaxResults(1).getResultList();
 	}
 
 	public void obtenerNotaCredito() {
@@ -117,24 +119,24 @@ public class NotasCreditoQB {
 				DataService service = helper.getDataService(realmId, accessToken);
 				String WHERE = "";
 				String ORDERBY = " ORDER BY Id ASC";
-				WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio()
+				WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdNcInicio()
 						+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
 
-				String sql = "select * from vendorcredit ";
+				String sql = "select * from creditmemo ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;
 				System.out.println("QUERYFINAL " + QUERYFINAL);
 				QueryResult queryResult = service.executeQuery(QUERYFINAL);
-				List<VendorCredit> notasCredito = (List<VendorCredit>) queryResult.getEntities();
+				List<CreditMemo> notasCredito = (List<CreditMemo>) queryResult.getEntities();
 				System.out.println("NOTAS DE CREDITO OBTENIDOS " + notasCredito.size());
 
-				for (VendorCredit vendorCredit : notasCredito) {
-					System.out.println("NUMERO DIGITOS  " + vendorCredit.getPrivateNote().length() + "   # DOCUM "
-							+ vendorCredit.getDocNumber().toUpperCase());
+				for (CreditMemo vendorCredit : notasCredito) {
+//					System.out.println("NUMERO DIGITOS  " + vendorCredit.getPrivateNote().length() + "   # DOCUM "
+//							+ vendorCredit.getDocNumber().toUpperCase());
 
-					if (vendorCredit.getPrivateNote().length() == 17
-							&& vendorCredit.getDocNumber().toUpperCase().contains("NC")) {
-						String separaNumero[] = vendorCredit.getDocNumber().split("-");
-						String numeroRetencion = separaNumero[1];
+//					if (vendorCredit.getPrivateNote().length() == 17
+//							&& vendorCredit.getDocNumber().toUpperCase().contains("NC")) {
+//						String separaNumero[] = vendorCredit.getDocNumber().split("-");
+//						String numeroRetencion = separaNumero[1];
 						/* VALIDAR SI EXISTE LA RETENCION */
 						Optional<NotaCreditoDebito> verificaDoc = notaCreditoRepository.findByTxnId(
 								Integer.valueOf(vendorCredit.getId()),
@@ -148,11 +150,11 @@ public class NotasCreditoQB {
 
 						}
 
-					} else {
-						System.out.println("RETENCION NO PROCESADA EL NUMERO DE FACTURA NO CUMPLE CON LA ESTRUCTURA "
-								+ vendorCredit.getDocNumber());
-
-					}
+//					} else {
+//						System.out.println("RETENCION NO PROCESADA EL NUMERO DE FACTURA NO CUMPLE CON LA ESTRUCTURA "
+//								+ vendorCredit.getDocNumber());
+//
+//					}
 
 				}
 			}
@@ -162,7 +164,7 @@ public class NotasCreditoQB {
 		}
 	}
 
-	private String mapperVendorToNotaCredito(VendorCredit vendorCredit) {
+	private String mapperVendorToNotaCredito(CreditMemo vendorCredit) {
 		Gson gson = new Gson();
 		SimpleDateFormat format = new SimpleDateFormat("yyyy-MM-dd");
 
@@ -184,7 +186,7 @@ public class NotasCreditoQB {
 			// Obtiene el secuencial de la nota de credito
 			// crear un campom para el secuencial de nota de credito
 			Integer numeroNotaCredito = notaCreditoRecup != null ? notaCreditoRecup.getFacNumero() + 1
-					: valoresGlobales.getTIPOAMBIENTE().getAmSecuencialInicioRetencion();
+					: valoresGlobales.getTIPOAMBIENTE().getAmSecuencialInicioNc();
 			String numeroRetencionText = numeroFacturaTexto(numeroNotaCredito);
 			System.out.println("numeroRetencionText " + numeroRetencionText);
 			NotaCreditoDebito notacredito = new NotaCreditoDebito();
@@ -257,7 +259,7 @@ public class NotasCreditoQB {
 			valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
 
 			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroText(notacredito.getNumeroFactura());
-			if (facturaRecup.isEmpty()) {
+			if (!facturaRecup.isPresent()) {
 				return "No existe una factura para crear una nota de credito";
 			}
 			notacredito.setIdFactura(facturaRecup.get());
@@ -302,13 +304,14 @@ public class NotasCreditoQB {
 			notacredito.setTxnId(Integer.valueOf(vendorCredit.getId()));
 			// recorre todos los detalles de vendorcredit
 
+			notaCreditoRepository.save(notacredito);
 			Item itemProd = null;
 			Producto producto = new Producto();
 			DetalleNotaDebitoCredito detalle = new DetalleNotaDebitoCredito();
 			for (Line item : vendorCredit.getLine()) {
 
 				detalle = new DetalleNotaDebitoCredito();
-				detalle.setIdNota(notaCreditoRecup);
+				detalle.setIdNota(notacredito);
 
 				if (item.getGroupLineDetail() != null) {
 					if (item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail() == null) {
@@ -383,7 +386,7 @@ public class NotasCreditoQB {
 				producto.setProdEstado(1);
 				producto.setProdTrasnporte(BigDecimal.ZERO);
 				producto.setProdIva(BigDecimal.ZERO);
-				producto.setProdUtilidadNormal(BigDecimal.ZERO);
+				producto.setProdUtilidadNormal(BigDecimal.ZERO); 
 				producto.setProdManoObra(BigDecimal.ZERO);
 				producto.setProdUtilidadPreferencial(BigDecimal.ZERO);
 				producto.setProdCostoPreferencial(BigDecimal.ZERO);
@@ -476,16 +479,16 @@ public class NotasCreditoQB {
 			memoRef.setValue(claveAcceso);
 			/* Cambia el secuencial en la plataforma de QuickBooks */
 			vendorCredit.setDocNumber(numeroFacturaTexto(numeroNotaCredito));
-//			vendorCredit.setCustomerMemo(memoRef);
+			vendorCredit.setCustomerMemo(memoRef);
 //			vendorCredit.setAllowIPNPayment(Boolean.TRUE);
 			/* actualizo la factura en QB */
 			service.update(vendorCredit);
 		} catch (Exception e) {
 			// TODO: handle exception
 			e.printStackTrace();
-			return "ERROR AL CREAR LA RETENCION " + e.getMessage();
+			return "ERROR AL CREAR LA NOTA DE CREDITO " + e.getMessage();
 		}
-		return "RETENCION REGISTRADA";
+		return "NOTA DE CREDITO REGISTRADA";
 	}
 
 	/* GENERA EL NUMERO DE DOCUMENTO DE LA FATURA */

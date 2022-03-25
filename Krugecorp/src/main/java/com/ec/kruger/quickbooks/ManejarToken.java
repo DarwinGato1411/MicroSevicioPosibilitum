@@ -1,4 +1,4 @@
-package com.ec.g2g.quickbook;
+package com.ec.kruger.quickbooks;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -9,10 +9,9 @@ import org.json.JSONObject;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.servlet.View;
 import org.springframework.web.servlet.view.RedirectView;
 
-import com.ec.g2g.global.ValoresGlobales;
+import com.ec.kruger.global.ValoresGlobales;
 import com.intuit.oauth2.client.DiscoveryAPIClient;
 import com.intuit.oauth2.client.OAuth2PlatformClient;
 import com.intuit.oauth2.config.Environment;

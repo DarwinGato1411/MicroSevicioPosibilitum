@@ -20,7 +20,7 @@ public interface RetencionCompraRepository extends CrudRepository<RetencionCompr
 	/* ultimo secuencial */
 	RetencionCompra findFirstByOrderByRcoSecuencialDesc();
 
-	@Query("SELECT u FROM RetencionCompra u WHERE  (u.idQuick =:idQuick or u.rcoSecuencialText=:rcoSecuencialText) and u.codTipoambiente.amRuc =:amRuc")
+	@Query("SELECT u FROM RetencionCompra u WHERE  (u.idQuick =:idQuick and u.rcoSecuencialText=:rcoSecuencialText) and u.codTipoambiente.amRuc =:amRuc")
 	Optional<RetencionCompra> findByIdQuickOrRcoSecuencialText(@Param("idQuick") Integer idQuick,
 			@Param("rcoSecuencialText") String rcoSecuencialText, @Param("amRuc") String amRuc);
 

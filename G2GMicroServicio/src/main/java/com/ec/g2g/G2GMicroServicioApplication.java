@@ -231,6 +231,8 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 			tipoambiente.setAmstadoPosibilitum(Boolean.FALSE);
 			tipoambiente.setAmPuerto(puerto);
 			tipoambiente.setAmRipme(Boolean.FALSE);
+			tipoambiente.setAmIdNcInicio(99999999);
+			tipoambiente.setAmSecuencialInicioNc(99999999);
 			tipoAmbienteRepository.save(tipoambiente);
 
 			// PRODUCCION
@@ -274,6 +276,8 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 			tipoambienteProd.setAmPuerto(puerto);
 			tipoambienteProd.setAmstadoPosibilitum(Boolean.FALSE);
 			tipoambienteProd.setAmRipme(Boolean.FALSE);
+			tipoambienteProd.setAmIdNcInicio(99999999);
+			tipoambienteProd.setAmSecuencialInicioNc(99999999);
 			tipoAmbienteRepository.save(tipoambienteProd);
 
 			Parametrizar parametrizar = new Parametrizar();
@@ -295,7 +299,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	}
 
 //dejarlo cada 8 minutos
-	@Scheduled(fixedRate = 6 * 60 * 1000)
+	@Scheduled(fixedRate = 5 * 60 * 1000)
 	public void tareaProcesaFacturas() {
 		RestTemplate restTemplate = new RestTemplate();
 		RespuestaDocumentos respueta = restTemplate.getForObject(serviceURLFACTURAS + RUCEMPRESA,
@@ -314,7 +318,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	}
 
 	/* Tiempo de notas de credito */
-	@Scheduled(fixedRate = 4 * 60 * 1000)
+	@Scheduled(fixedRate = 6 * 60 * 1000)
 	public void tareanotaCredito() {
 		System.out.println("OBTIENE LOS DOCUMENTOS CADA 10 MINUTOS RETENCIONES : ");
 		creditoQB.obtenerNotaCredito();
