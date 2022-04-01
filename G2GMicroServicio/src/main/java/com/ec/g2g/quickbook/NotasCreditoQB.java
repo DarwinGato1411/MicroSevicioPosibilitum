@@ -200,7 +200,7 @@ public class NotasCreditoQB {
 							// TODO: handle exception
 						}
 					} else if (etiquetas.getDefinitionId().equals("2")) {
-//						notacredito.setFacKilometraje(etiquetas.getStringValue());
+						notacredito.setFacDescripcion(etiquetas.getStringValue()); 
 					} else if (etiquetas.getDefinitionId().equals("3")) {
 
 						notacredito.setNumeroFactura(etiquetas.getStringValue());
