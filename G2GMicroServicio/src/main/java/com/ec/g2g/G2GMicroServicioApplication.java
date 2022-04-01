@@ -21,6 +21,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
@@ -153,10 +154,11 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	private EntityManager entityManager;
 
 	public List<Factura> findUltimoSecuencial() {
-		return entityManager
+		return 	entityManager
 				.createQuery("SELECT p FROM Factura p WHERE p.codTipoambiente.amRuc=:amRuc ORDER BY p.facNumero DESC",
 						Factura.class)
-				.setParameter("amRuc", RUCEMPRESA).setMaxResults(1).getResultList();
+				.setParameter("amRuc", RUCEMPRESA).getResultList();
+//		   return new Page<>(lsta,12,1);
 	}
 
 	public static void main(String[] args) {

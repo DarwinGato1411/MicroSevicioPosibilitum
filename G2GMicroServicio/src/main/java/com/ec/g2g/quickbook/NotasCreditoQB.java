@@ -272,6 +272,7 @@ public class NotasCreditoQB {
 			subtotalFac = baseGrabada.add(baseCero);
 			notacredito.setFacSubtotal(subtotalFac);
 			BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
+			notacredito.setFacIva(valorIva);
 			notacredito.setFacTotal(valorTotalFact);
 			notacredito.setFacEstado("EM");
 			notacredito.setFacTipo("NCRE");
