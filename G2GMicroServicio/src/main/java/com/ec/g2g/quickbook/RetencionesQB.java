@@ -118,23 +118,22 @@ public class RetencionesQB {
 		// String accessToken = valoresGlobales.TOKEN;
 		String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
 		try {
-			
+
 			Date fechaConsulta = new Date();
 			Calendar c = Calendar.getInstance();
 			c.setTime(fechaConsulta);
 			// reta loos dias que necesitas
 			c.add(Calendar.DATE, -5);
 			fechaConsulta = c.getTime();
-			
+
 			if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
 				// get DataService
 				DataService service = helper.getDataService(realmId, accessToken);
 				String WHERE = "";
 				String ORDERBY = " ORDER BY Id ASC";
-				
-					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio() 
-					+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
-				
+
+				WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdRetencionInicio()
+						+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
 
 				String sql = "select * from vendorcredit ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;
@@ -185,7 +184,9 @@ public class RetencionesQB {
 			Vendor vendor = obtenerVendor(vendorCredit.getVendorRef().getValue());
 
 			// campo OTROS de QB
+			/* OBTENEMOS EL RUC DEL CAMPO OTROS */
 			String cedulaRUC = vendor.getAlternatePhone() != null ? vendor.getAlternatePhone().getFreeFormNumber() : "";
+
 			Optional<Proveedores> proveedoresRecup = proveedorRepository.findByProvCedula(cedulaRUC);
 			// pendiente por definir el campo (FAX O CODIGO POSTAL)
 			Proveedores proveedores = new Proveedores();
@@ -202,7 +203,9 @@ public class RetencionesQB {
 								: valoresGlobales.getTIPOAMBIENTE().getAmUsuarioSmpt());
 				// VERIFICAR EN QUE CAMPO RETORNA EL VALOR DEL DOCUMENTO
 				Optional<TipoIdentificacionCompra> tipoadentificacion = tipoIdentificacionCompra
-						.findById(validarCedulaRuc(cedulaRUC).getCodigo());
+						.findById(validarCedulaRuc(cedulaRUC,
+								vendor.getBillAddr() != null ? vendor.getBillAddr().getCountrySubDivisionCode() : "")
+										.getCodigo());
 				proveedores.setIdTipoIdentificacionCompra(tipoadentificacion.get());
 				/* GUARDAMOS EL PROVEEDOR */
 				proveedorRepository.save(proveedores);
@@ -239,22 +242,22 @@ public class RetencionesQB {
 
 //			Optional<CabeceraCompra> cabeceraComprasRecup = compraRepository.findByCabNumFactura(numFactura);
 //			if (!cabeceraComprasRecup.isPresent()) {
-				System.out.println("INSERTA LA CABECERA DE COMPRA NUEVA");
-				cabeceraCompra.setCabNumFactura(numFactura);
-				cabeceraCompra.setCabFecha(vendorCredit.getMetaData().getCreateTime());
-				cabeceraCompra.setCabSubTotal(BigDecimal.ZERO);
-				cabeceraCompra.setCabIva(BigDecimal.ZERO);
-				cabeceraCompra.setCabTotal(BigDecimal.ZERO);
-				cabeceraCompra.setDrcCodigoSustento("01");
-				cabeceraCompra.setCabRetencionAutori("N");
-				cabeceraCompra.setIdProveedor(proveedores);
-				cabeceraCompra.setCabEstado("PA");
-				cabeceraCompra.setCabProveedor(vendor.getDisplayName());
-				// fecha de la factura
-				cabeceraCompra.setCabFechaEmision(vendorCredit.getTxnDate());
-				cabeceraCompra.setCabEstablecimiento(establecimiento);
-				cabeceraCompra.setCabPuntoEmi(puntoEmision);
-				compraRepository.save(cabeceraCompra);
+			System.out.println("INSERTA LA CABECERA DE COMPRA NUEVA");
+			cabeceraCompra.setCabNumFactura(numFactura);
+			cabeceraCompra.setCabFecha(vendorCredit.getMetaData().getCreateTime());
+			cabeceraCompra.setCabSubTotal(BigDecimal.ZERO);
+			cabeceraCompra.setCabIva(BigDecimal.ZERO);
+			cabeceraCompra.setCabTotal(BigDecimal.ZERO);
+			cabeceraCompra.setDrcCodigoSustento("01");
+			cabeceraCompra.setCabRetencionAutori("N");
+			cabeceraCompra.setIdProveedor(proveedores);
+			cabeceraCompra.setCabEstado("PA");
+			cabeceraCompra.setCabProveedor(vendor.getDisplayName());
+			// fecha de la factura
+			cabeceraCompra.setCabFechaEmision(vendorCredit.getTxnDate());
+			cabeceraCompra.setCabEstablecimiento(establecimiento);
+			cabeceraCompra.setCabPuntoEmi(puntoEmision);
+			compraRepository.save(cabeceraCompra);
 
 //			} else {
 //				cabeceraCompra = cabeceraComprasRecup.get();
@@ -363,7 +366,7 @@ public class RetencionesQB {
 			}
 
 			/* Cambia el secuencial en la plataforma de QuickBooks */
-			vendorCredit.setDocNumber("RT-"+numeroRetencionText);
+			vendorCredit.setDocNumber("RT-" + numeroRetencionText);
 			service.update(vendorCredit);
 
 		} catch (Exception e) {
@@ -410,15 +413,15 @@ public class RetencionesQB {
 
 	}
 
-	private ModelIdentificacion validarCedulaRuc(String valor) {
+	private ModelIdentificacion validarCedulaRuc(String valor, String tipoDoc) {
 		ModelIdentificacion validador = new ModelIdentificacion("SIN VALIDAR", 4);
 		try {
-			if (valor.length() == 10) {
+			if (valor.length() == 10 && tipoDoc.equals("")) {
 				validador = new ModelIdentificacion("C", 2);
 
-			} else if (valor.length() == 13) {
+			} else if (valor.length() == 13 && tipoDoc.equals("")) {
 				validador = new ModelIdentificacion("R", 1);
-			} else {
+			} else if (tipoDoc.equals("P")) {
 				validador = new ModelIdentificacion("P", 3);
 			}
 		} catch (Exception e) {

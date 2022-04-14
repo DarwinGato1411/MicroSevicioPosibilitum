@@ -135,7 +135,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	private RetencionesQB retencionesQB;
 	@Autowired
 	private NotasCreditoQB creditoQB;
-	
+
 	/* RETENCIOONES */
 	/*
 	 * @Autowired private NotasCreditoQB notasCreditoQB;
@@ -154,7 +154,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	private EntityManager entityManager;
 
 	public List<Factura> findUltimoSecuencial() {
-		return 	entityManager
+		return entityManager
 				.createQuery("SELECT p FROM Factura p WHERE p.codTipoambiente.amRuc=:amRuc ORDER BY p.facNumero DESC",
 						Factura.class)
 				.setParameter("amRuc", RUCEMPRESA).getResultList();
@@ -369,10 +369,8 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 				String WHERE = "";
 				String ORDERBY = " ORDER BY DocNumber ASC";
 
-			
-					WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdFacturaInicio()
-							+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
-				
+				WHERE = " WHERE Id > '" + valoresGlobales.getTIPOAMBIENTE().getAmIdFacturaInicio()
+						+ "'  AND MetaData.CreateTime >= '" + format.format(fechaConsulta) + "'";
 
 				String sql = "select * from invoice ";
 				String QUERYFINAL = sql + WHERE + ORDERBY;
@@ -564,27 +562,23 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 							det = new DetalleFactura();
 							contadorLine++;
 
-							
-							if (item.getGroupLineDetail()!= null) {
+							if (item.getGroupLineDetail() != null) {
 								if (item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail() == null) {
 									System.out.println("getSalesItemLineDetail NULL ");
 									break;
 								}
-							}else {
+							} else {
 								if (item.getSalesItemLineDetail() == null) {
 									System.out.println("getSalesItemLineDetail NULL ");
 									break;
 								}
 							}
-							
 
 							if (item.getGroupLineDetail() != null) {
 
-								
-									itemProd = getProduct(item.getGroupLineDetail().getGroupItemRef() != null
-											? item.getGroupLineDetail().getGroupItemRef().getValue()
-											: "0");
-							
+								itemProd = getProduct(item.getGroupLineDetail().getGroupItemRef() != null
+										? item.getGroupLineDetail().getGroupItemRef().getValue()
+										: "0");
 
 							} else {
 								itemProd = getProduct(item.getSalesItemLineDetail() != null
@@ -615,8 +609,10 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 							List<TaxRate> rateDetail = null;
 							TaxRate taxRatePorcet = null;
 
-							TaxCode taxCode = taxCodeQB
-									.obtenerTaxCode(item.getGroupLineDetail()!=null?item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getTaxCodeRef().getValue(): item.getSalesItemLineDetail().getTaxCodeRef().getValue());
+							TaxCode taxCode = taxCodeQB.obtenerTaxCode(item.getGroupLineDetail() != null
+									? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail()
+											.getTaxCodeRef().getValue()
+									: item.getSalesItemLineDetail().getTaxCodeRef().getValue());
 
 							for (TaxRateDetail detail : taxCode.getSalesTaxRateList().getTaxRateDetail()) {
 //							JSONCLIENTE = gson.toJson(detail);
@@ -684,10 +680,11 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 								det.setIdProducto(producto);
 							}
 							// revision con Paul es el campo getUnitPrice
-							BigDecimal precioUnitario = item.getGroupLineDetail()!=null?item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getUnitPrice()
+							BigDecimal precioUnitario = item.getGroupLineDetail() != null
+									? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getUnitPrice()
 									: item.getSalesItemLineDetail() != null
-									? item.getSalesItemLineDetail().getUnitPrice()
-									: BigDecimal.ZERO;
+											? item.getSalesItemLineDetail().getUnitPrice()
+											: BigDecimal.ZERO;
 							BigDecimal valorDescuento = BigDecimal.ZERO;
 							if (precioUnitario.doubleValue() > 0 && porcentajeDescuento.doubleValue() > 0) {
 								valorDescuento = precioUnitario.multiply(porcentajeDescuento)
@@ -704,16 +701,18 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 
 							BigDecimal precioConDescuento = precioUnitario.subtract(
 									precioUnitario.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100)));
-							BigDecimal cantidadProductos = item.getGroupLineDetail()!=null?item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
-									:item.getSalesItemLineDetail() != null
-									? item.getSalesItemLineDetail().getQty() != null
-											? item.getSalesItemLineDetail().getQty()
-											: BigDecimal.ONE
-									: BigDecimal.ONE;
+							BigDecimal cantidadProductos = item.getGroupLineDetail() != null
+									? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
+									: item.getSalesItemLineDetail() != null
+											? item.getSalesItemLineDetail().getQty() != null
+													? item.getSalesItemLineDetail().getQty()
+													: BigDecimal.ONE
+											: BigDecimal.ONE;
 
 							det.setIdFactura(factura);
-							/*obtiene la cantidad dependiendo si es un item o grupo de items*/
-							BigDecimal cantidad=item.getGroupLineDetail()!=null?item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
+							/* obtiene la cantidad dependiendo si es un item o grupo de items */
+							BigDecimal cantidad = item.getGroupLineDetail() != null
+									? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
 									: item.getSalesItemLineDetail().getQty();
 							det.setDetCantidad(cantidad);
 							det.setDetDescripcion(item.getDescription());
@@ -864,15 +863,15 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 
 	}
 
-	private ModelIdentificacion validarCedulaRuc(String valor) {
+	private ModelIdentificacion validarCedulaRuc(String valor, String tipoDoc) {
 		ModelIdentificacion validador = new ModelIdentificacion("SIN VALIDAR", 4);
 		try {
-			if (valor.length() == 10) {
+			if (valor.length() == 10 && tipoDoc.equals("")) {
 				validador = new ModelIdentificacion("C", 2);
 
-			} else if (valor.length() == 13) {
+			} else if (valor.length() == 13 && tipoDoc.equals("")) {
 				validador = new ModelIdentificacion("R", 1);
-			} else {
+			} else if (tipoDoc.toUpperCase().contains("P")) {
 				validador = new ModelIdentificacion("P", 3);
 			}
 		} catch (Exception e) {
@@ -886,11 +885,8 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 
 	private Cliente mapperCliente(Customer customer) {
 		String identificacion = "9999999999999";
-		if (customer.getPrimaryTaxIdentifier() != null) {
-			identificacion = customer.getPrimaryTaxIdentifier().contains("X")
-					? customer.getNotes() != null ? customer.getNotes() : "-1"
-					: customer.getPrimaryTaxIdentifier();
-		}
+
+		identificacion = customer.getNotes() != null ? customer.getNotes() : "-1";
 
 		Cliente cliente = null;
 		String nombreCliente = customer.getFullyQualifiedName() != null ? customer.getFullyQualifiedName() : "S/N";
@@ -924,8 +920,10 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 			cliente.setClietipo(0);
 			// buscar el identificador
 
-			Optional<Tipoadentificacion> tipoadentificacion = tipoIdentificacionRepository
-					.findById(validarCedulaRuc(identificacion).getCodigo());
+			Optional<Tipoadentificacion> tipoadentificacion = tipoIdentificacionRepository.findById(validarCedulaRuc(
+					identificacion,
+					customer.getAlternatePhone() != null ? customer.getAlternatePhone().getFreeFormNumber() : "")
+							.getCodigo());
 			cliente.setIdTipoIdentificacion(tipoadentificacion.get());
 			cliente.setCliNombres(customer.getGivenName() != null ? customer.getGivenName() : "S/N");
 			cliente.setCliApellidos(customer.getFamilyName() != null ? customer.getFamilyName() : "S/N");
