@@ -922,8 +922,9 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 
 			Optional<Tipoadentificacion> tipoadentificacion = tipoIdentificacionRepository.findById(validarCedulaRuc(
 					identificacion,
-					customer.getAlternatePhone() != null ? customer.getAlternatePhone().getFreeFormNumber() : "")
-							.getCodigo());
+					customer.getAlternatePhone() != null ? customer.getAlternatePhone().getFreeFormNumber() != null
+							? customer.getAlternatePhone().getFreeFormNumber()
+							: "" : "").getCodigo());
 			cliente.setIdTipoIdentificacion(tipoadentificacion.get());
 			cliente.setCliNombres(customer.getGivenName() != null ? customer.getGivenName() : "S/N");
 			cliente.setCliApellidos(customer.getFamilyName() != null ? customer.getFamilyName() : "S/N");
