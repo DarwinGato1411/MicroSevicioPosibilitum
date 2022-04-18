@@ -204,8 +204,11 @@ public class RetencionesQB {
 				// VERIFICAR EN QUE CAMPO RETORNA EL VALOR DEL DOCUMENTO
 				Optional<TipoIdentificacionCompra> tipoadentificacion = tipoIdentificacionCompra
 						.findById(validarCedulaRuc(cedulaRUC,
-								vendor.getBillAddr() != null ? vendor.getBillAddr().getCountrySubDivisionCode() : "")
-										.getCodigo());
+								vendor.getBillAddr() != null
+										? vendor.getBillAddr().getCountrySubDivisionCode() != null
+												? vendor.getBillAddr().getCountrySubDivisionCode()
+												: ""
+										: "").getCodigo());
 				proveedores.setIdTipoIdentificacionCompra(tipoadentificacion.get());
 				/* GUARDAMOS EL PROVEEDOR */
 				proveedorRepository.save(proveedores);
@@ -421,7 +424,7 @@ public class RetencionesQB {
 
 			} else if (valor.length() == 13 && tipoDoc.equals("")) {
 				validador = new ModelIdentificacion("R", 1);
-			} else if (tipoDoc.equals("P")) {
+			} else if (tipoDoc.toUpperCase().contains("P")) {
 				validador = new ModelIdentificacion("P", 3);
 			}
 		} catch (Exception e) {
