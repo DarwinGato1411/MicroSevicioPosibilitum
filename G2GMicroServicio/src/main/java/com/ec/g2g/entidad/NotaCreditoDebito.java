@@ -158,6 +158,7 @@ public class NotaCreditoDebito implements Serializable {
     @Column(name = "txn_id")
     private Integer txnId;
     
+ 
     public NotaCreditoDebito() {
     }
 
@@ -522,6 +523,10 @@ public class NotaCreditoDebito implements Serializable {
 	public void setTxnId(Integer txnId) {
 		this.txnId = txnId;
 	}
+
+	
+	
+	
 
 	@Override
     public int hashCode() {

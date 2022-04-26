@@ -470,6 +470,8 @@ public class NotasCreditoQB {
 				detalle.setDetCantpordescuento(valorDescuento.multiply(cantidadProductos));
 				detalle.setDetSubtotaldescuentoporcantidad(precioConDescuento.multiply(cantidadProductos));
 				detalle.setDetTipoVenta("0");
+				detalle.setCodigoProducto(itemProd.getSku() == null ? "001" : itemProd.getSku());
+				detalle.setProdGrabaIva(prodGrabaIva);
 //				/* Detalle de factura */
 				detalleNotaCreditoRepository.save(detalle);
 
