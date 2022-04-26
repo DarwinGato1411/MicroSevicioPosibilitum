@@ -278,7 +278,7 @@ public class NotasCreditoQB {
 			notacredito.setFacTipo("NCRE");
 			notacredito.setFacAbono(BigDecimal.ZERO);
 			notacredito.setFacSaldo(BigDecimal.ZERO);
-			notacredito.setFacDescripcion("NC QUICKBOOKS");
+//			notacredito.setFacDescripcion("NC QUICKBOOKS");
 			notacredito.setFacNumProforma(0);
 			notacredito.setTipodocumento("04");
 			notacredito.setPuntoemision(valoresGlobales.TIPOAMBIENTE.getAmPtoemi());
@@ -299,7 +299,7 @@ public class NotasCreditoQB {
 			notacredito.setEstadosri("PENDIENTE");
 			notacredito.setCodTipoambiente(valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente());
 			notacredito.setTipodocumentomod("01");
-			notacredito.setFacNumero(facturaRecup.get().getFacNumero());
+			notacredito.setFacNumero(numeroNotaCredito);
 			notacredito.setFacClaveAcceso(claveAcceso);
 			notacredito.setFacClaveAutorizacion(claveAcceso);
 			notacredito.setTxnId(Integer.valueOf(vendorCredit.getId()));

@@ -756,6 +756,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 						invoice.setAllowIPNPayment(Boolean.TRUE);
 						/* actualizo la factura en QB */
 						service.update(invoice);
+						
 					}
 				}
 				// return new ResponseEntity<QueryResult>(queryResult, httpHeaders,
@@ -900,7 +901,15 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 			cliente2.setCliTelefono(
 					customer.getPrimaryPhone() != null ? customer.getPrimaryPhone().getFreeFormNumber() : "");
 			cliente2.setCliDireccion(customer.getBillAddr() != null ? customer.getBillAddr().getLine1() : "");
+			Optional<Tipoadentificacion> tipoadentificacion = tipoIdentificacionRepository.findById(validarCedulaRuc(
+					identificacion,
+					customer.getAlternatePhone() != null ? customer.getAlternatePhone().getFreeFormNumber() != null
+							? customer.getAlternatePhone().getFreeFormNumber()
+							: "" : "").getCodigo());
+
+			cliente2.setIdTipoIdentificacion(tipoadentificacion.isPresent() ? tipoadentificacion.get() : null);
 			clienteRepository.save(cliente2);
+
 			return cliente2;
 		} else {
 			cliente = new Cliente();
