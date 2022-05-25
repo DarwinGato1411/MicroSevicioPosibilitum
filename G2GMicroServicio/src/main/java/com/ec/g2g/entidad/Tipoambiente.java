@@ -180,6 +180,9 @@ public class Tipoambiente implements Serializable {
 
    @Column(name = "am_secuencial_inicio_nc")
    private Integer amSecuencialInicioNc;
+   
+   @OneToMany(mappedBy = "codTipoambiente")
+   private Collection<FacturaReporte> facturaReporteCollection;
 
 	public Tipoambiente() {
 	}
@@ -647,6 +650,14 @@ public class Tipoambiente implements Serializable {
 
 	public void setAmSecuencialInicioNc(Integer amSecuencialInicioNc) {
 		this.amSecuencialInicioNc = amSecuencialInicioNc;
+	}
+
+	public Collection<FacturaReporte> getFacturaReporteCollection() {
+		return facturaReporteCollection;
+	}
+
+	public void setFacturaReporteCollection(Collection<FacturaReporte> facturaReporteCollection) {
+		this.facturaReporteCollection = facturaReporteCollection;
 	}
 
 	@Override

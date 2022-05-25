@@ -37,10 +37,10 @@ public class SwaggerConfig {
 	}
 
 	private ApiInfo apiInfo() {
-		Contact contact = new Contact("G2G", "www.g2g.com", "darwinvinicio14_11@hotmail.com");
+		Contact contact = new Contact("DECKXEL", "www.deckxel.com", "darwinvinicio14_11@hotmail.com");
 
-		return new ApiInfoBuilder().title("Swagger API").description("Informacion adicional a g2g")
-				.termsOfServiceUrl("www.g2g.com").contact(contact).version("1.0").build();
+		return new ApiInfoBuilder().title("Swagger API").description("Informacion adicional a Deckxel")
+				.termsOfServiceUrl("www.deckxel.com").contact(contact).version("1.0").build();
 
 	}
 }

@@ -151,9 +151,12 @@ public class RetencionesQB {
 						String separaNumero[] = vendorCredit.getDocNumber().split("-");
 						String numeroRetencion = separaNumero[1];
 						/* VALIDAR SI EXISTE LA RETENCION */
+//						Optional<RetencionCompra> retencionValida = retencionCompraRepository
+//								.findByIdQuickOrRcoSecuencialText(Integer.valueOf(vendorCredit.getId()),
+//										numeroRetencion, valoresGlobales.getTIPOAMBIENTE().getAmRuc());
 						Optional<RetencionCompra> retencionValida = retencionCompraRepository
-								.findByIdQuickOrRcoSecuencialText(Integer.valueOf(vendorCredit.getId()),
-										numeroRetencion, valoresGlobales.getTIPOAMBIENTE().getAmRuc());
+								.findByIdQuickOrCodAmbiente(Integer.valueOf(vendorCredit.getId()),
+										 valoresGlobales.getTIPOAMBIENTE().getAmRuc());
 						if (!retencionValida.isPresent()) {
 							System.out.println(
 									"PROCESANDO RETENCION --> " + mapperVendorToRetencion(vendorCredit, service));

@@ -756,7 +756,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 						invoice.setAllowIPNPayment(Boolean.TRUE);
 						/* actualizo la factura en QB */
 						service.update(invoice);
-						
+
 					}
 				}
 				// return new ResponseEntity<QueryResult>(queryResult, httpHeaders,

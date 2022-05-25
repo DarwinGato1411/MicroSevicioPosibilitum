@@ -63,6 +63,9 @@ public class Usuario implements Serializable {
  
     @OneToMany(mappedBy = "idUsuario")
     private Collection<OrdenTrabajo> ordenTrabajoCollection;
+    
+    @OneToMany(mappedBy = "idUsuario")
+    private Collection<FacturaReporte> facturaReporteCollection;
 
     public Usuario() {
     }
@@ -172,7 +175,15 @@ public class Usuario implements Serializable {
         this.ordenTrabajoCollection = ordenTrabajoCollection;
     }
 
-    @Override
+    public Collection<FacturaReporte> getFacturaReporteCollection() {
+		return facturaReporteCollection;
+	}
+
+	public void setFacturaReporteCollection(Collection<FacturaReporte> facturaReporteCollection) {
+		this.facturaReporteCollection = facturaReporteCollection;
+	}
+
+	@Override
     public int hashCode() {
         int hash = 0;
         hash += (idUsuario != null ? idUsuario.hashCode() : 0);

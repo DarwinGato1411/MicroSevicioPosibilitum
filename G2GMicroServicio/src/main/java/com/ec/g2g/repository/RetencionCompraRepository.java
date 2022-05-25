@@ -24,4 +24,6 @@ public interface RetencionCompraRepository extends CrudRepository<RetencionCompr
 	Optional<RetencionCompra> findByIdQuickOrRcoSecuencialText(@Param("idQuick") Integer idQuick,
 			@Param("rcoSecuencialText") String rcoSecuencialText, @Param("amRuc") String amRuc);
 
+	@Query("SELECT u FROM RetencionCompra u WHERE  u.idQuick =:idQuick  and u.codTipoambiente.amRuc =:amRuc")
+	Optional<RetencionCompra> findByIdQuickOrCodAmbiente(@Param("idQuick") Integer idQuick, @Param("amRuc") String amRuc);
 }

@@ -1,10 +1,16 @@
 package com.ec.g2g.controller;
 
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 
+import javax.persistence.EntityManager;
+import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
+import javax.transaction.Transactional;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -14,16 +20,17 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.View;
-import org.springframework.web.servlet.view.RedirectView;
 
 import com.ec.g2g.global.ValoresGlobales;
 import com.ec.g2g.quickbook.ManejarToken;
 import com.ec.g2g.quickbook.OAuth2PlatformClientFactory;
 import com.ec.g2g.quickbook.QBOServiceHelper;
+import com.ec.g2g.quickbook.ReporteFacturas;
+import com.ec.g2g.repository.ReporteFacturasRepository;
 import com.intuit.ipp.exception.FMSException;
 import com.intuit.ipp.exception.InvalidTokenException;
 import com.intuit.ipp.services.DataService;
@@ -66,6 +73,13 @@ public class FacturasController {
 
 	@Autowired
 	private ValoresGlobales valoresGlobales;
+
+	@Autowired
+	ReporteFacturas reporteFacturas;
+	@Autowired
+	ReporteFacturasRepository repository;
+	
+
 
 	private static final Logger logger = Logger.getLogger(FacturasController.class);
 	private static final String failureMsg = "Failed";
@@ -158,9 +172,7 @@ public class FacturasController {
 		}
 		return null;
 	}
-	
-	
-	
+
 	/* prebas de desarrollo */
 //	consultar companias
 
@@ -243,6 +255,30 @@ public class FacturasController {
 			return new ResponseEntity<String>("VERIFICAR", httpHeaders, HttpStatus.OK);
 		}
 
+	}
+
+	/* REPORTE DE FACTUTRAS */
+	@RequestMapping(value = "/reporte-factura", method = RequestMethod.GET)
+	@ApiOperation(tags = "Reporte de factura", value = "Obtiene las factura	s por un rango de tiempo formato 01-05-2022 (dd-MM-yyyy)")
+	public ResponseEntity<?> reporteFacturas(String inicio, String fin) {
+		
+		  SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");  
+		      
+		    
+		    
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+		
+//		repository.deleteByIdFacturaRep(13886);
+		try {
+			reporteFacturas.obtenerReporte(formatter.parse(inicio),formatter.parse(fin));
+		} catch (ParseException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+
+		return new ResponseEntity<String>("VERIFICAR", httpHeaders, HttpStatus.OK);
 	}
 
 }

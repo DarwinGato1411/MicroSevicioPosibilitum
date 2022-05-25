@@ -141,7 +141,7 @@
 	</dependencies>
 
 	<build>
-	<finalName>PagoPlux8813</finalName>
+	<finalName>KrugerCorporation8809</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
