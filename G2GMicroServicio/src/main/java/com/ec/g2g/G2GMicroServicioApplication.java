@@ -484,7 +484,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 						factura.setFacIva(valorIva);
 //					 TOTAL DE LA FATURA
 						BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
-						factura.setFacTotal(valorTotalFact);
+						factura.setFacTotal(invoice.getTotalAmt());
 						factura.setFacObservacion(invoice.getPrivateNote() != null ? invoice.getPrivateNote() : "");
 						factura.setFacEstado("PA");
 						factura.setFacTipo("FACT");
