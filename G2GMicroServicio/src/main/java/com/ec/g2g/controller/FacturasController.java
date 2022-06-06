@@ -1,16 +1,15 @@
 package com.ec.g2g.controller;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.List;
 
-import javax.persistence.EntityManager;
-import javax.persistence.PersistenceContext;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import javax.transaction.Transactional;
 
 import org.apache.commons.lang.StringUtils;
 import org.apache.log4j.Logger;
@@ -31,6 +30,11 @@ import com.ec.g2g.quickbook.OAuth2PlatformClientFactory;
 import com.ec.g2g.quickbook.QBOServiceHelper;
 import com.ec.g2g.quickbook.ReporteFacturas;
 import com.ec.g2g.repository.ReporteFacturasRepository;
+import com.ec.g2g.utilitario.RealmId;
+import com.intuit.ipp.data.Attachable;
+import com.intuit.ipp.data.AttachableRef;
+import com.intuit.ipp.data.ObjectNameEnumType;
+import com.intuit.ipp.data.ReferenceType;
 import com.intuit.ipp.exception.FMSException;
 import com.intuit.ipp.exception.InvalidTokenException;
 import com.intuit.ipp.services.DataService;
@@ -78,8 +82,6 @@ public class FacturasController {
 	ReporteFacturas reporteFacturas;
 	@Autowired
 	ReporteFacturasRepository repository;
-	
-
 
 	private static final Logger logger = Logger.getLogger(FacturasController.class);
 	private static final String failureMsg = "Failed";
@@ -261,24 +263,80 @@ public class FacturasController {
 	@RequestMapping(value = "/reporte-factura", method = RequestMethod.GET)
 	@ApiOperation(tags = "Reporte de factura", value = "Obtiene las factura	s por un rango de tiempo formato 01-05-2022 (dd-MM-yyyy)")
 	public ResponseEntity<?> reporteFacturas(String inicio, String fin) {
-		
-		  SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");  
-		      
-		    
-		    
+
+		SimpleDateFormat formatter = new SimpleDateFormat("dd-MM-yyyy");
+
 		final HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 		httpHeaders.add("STATUS", "0");
-		
+
 //		repository.deleteByIdFacturaRep(13886);
 		try {
-			reporteFacturas.obtenerReporte(formatter.parse(inicio),formatter.parse(fin));
+			reporteFacturas.obtenerReporte(formatter.parse(inicio), formatter.parse(fin));
 		} catch (ParseException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
+			return new ResponseEntity<String>("ERROR AL PROCESAR LOS DATOS", httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
 
 		return new ResponseEntity<String>("VERIFICAR", httpHeaders, HttpStatus.OK);
+	}
+
+	/*REPORTE DE FACTUTRAS */
+	@RequestMapping(value = "/enviar-documentos", method = RequestMethod.GET)
+	@ApiOperation(tags = "Obtener reamlID", value = "Obtienen el identificador la empresa")
+	public ResponseEntity<?> obtenerRealmId() {
+
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+
+		try {
+			
+			// Dataservice
+			DataService service = helper.getDataService(valoresGlobales.REALMID, valoresGlobales.TOKEN);
+			
+			List<AttachableRef>  listaAttach = new ArrayList<AttachableRef>();
+			AttachableRef attachableRef = new AttachableRef();
+
+			ReferenceType referenceType = new ReferenceType();
+//			referenceType.setType("Invoice");
+				
+			referenceType.setType(ObjectNameEnumType.INVOICE.toString());
+//			referenceType.setType(ObjectNameEnumType.VENDOR_CREDIT.toString());
+			
+			referenceType.setValue("5298");
+		
+			attachableRef.setEntityRef(referenceType);
+
+			listaAttach.add(attachableRef);
+
+			// For attaching to Invoice or Bill or any Txn entity, Uncomment and replace the
+			// Id and type of the Txn in below code
+			Attachable attachable = new Attachable();
+			attachable.setAttachableRef(listaAttach);
+
+			attachable.setFileName("FACT-003001000002354.pdf");
+			attachable.setContentType("application/pdf");
+			java.io.File initialFile = new java.io.File("/opt/posibilitum/FACT-003001000002354.pdf");
+			InputStream targetStream = new FileInputStream(initialFile);
+			Attachable uploaded = service.upload(attachable, targetStream);
+			
+			return new ResponseEntity<>(uploaded, httpHeaders, HttpStatus.OK);
+		} catch (FMSException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		} catch (FileNotFoundException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+		
+
 	}
 
 }

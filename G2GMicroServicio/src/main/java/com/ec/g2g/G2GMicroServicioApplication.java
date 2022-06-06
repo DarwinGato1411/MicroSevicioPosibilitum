@@ -3,7 +3,6 @@ package com.ec.g2g;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.text.SimpleDateFormat;
-import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.List;
@@ -21,7 +20,6 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.builder.SpringApplicationBuilder;
 import org.springframework.boot.web.servlet.support.SpringBootServletInitializer;
-import org.springframework.data.domain.PageImpl;
 import org.springframework.scheduling.annotation.EnableScheduling;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.web.client.RestTemplate;
@@ -71,8 +69,6 @@ import com.intuit.ipp.exception.FMSException;
 import com.intuit.ipp.exception.InvalidTokenException;
 import com.intuit.ipp.services.DataService;
 import com.intuit.ipp.services.QueryResult;
-
-import ch.qos.logback.core.joran.conditional.IfAction;
 
 @SpringBootApplication
 @EnableScheduling
@@ -756,6 +752,10 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 						invoice.setAllowIPNPayment(Boolean.TRUE);
 						/* actualizo la factura en QB */
 						service.update(invoice);
+						
+
+						
+//							attachableRef.setEntityRef(invoice);
 
 					}
 				}

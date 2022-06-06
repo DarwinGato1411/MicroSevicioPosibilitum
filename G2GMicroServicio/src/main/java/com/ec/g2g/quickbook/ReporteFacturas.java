@@ -132,7 +132,7 @@ public class ReporteFacturas {
 //				+ "T23:59:00-07:00'";
 
 				String sqlFinal = "select * from Invoice where MetaData.CreateTime <='" + format.format(fin)
-						+ "T23:59:00-07:00' order by id asc MAXRESULTS  1";
+						+ "T23:59:00-07:00' order by id desc MAXRESULTS  1";
 
 				QueryResult queryResultFinal = service.executeQuery(sqlFinal);
 				List<Invoice> facturaFinal = (List<Invoice>) queryResultFinal.getEntities();
@@ -143,163 +143,174 @@ public class ReporteFacturas {
 //				+ "T00:00:00-07:00" + "' and  MetaData.CreateTime <='" + format.format(fin)
 //				+ "T23:59:00-07:00'";
 
-				String QUERYFINAL = "select * from Invoice where Id >='" + idInicial + "' and Id <'" + idFinal
-						+ "' order by id asc";
-				System.out.println("QUERY REPORTE VENTAS " + QUERYFINAL);
-				QueryResult queryResultRecorre = service.executeQuery(QUERYFINAL);
 				int j = idInicial + 100;
-				for (int i = 0; i < idFinal; j = j + 100) {
-					i = j;
+				for (int i = idInicial; i < idFinal; j = j + 100) {
+					/* Colocal el valor del ultimo query */
 					if (j > idFinal) {
 						j = idFinal;
 					}
 
+					/* QUERY PARA TRAER DE 100 en 100 */
+					String QUERYFINAL = "select * from Invoice where Id >='" + i + "' and Id <='" + j
+							+ "' order by id asc";
+					/* valor inicial para el siguiente query */
+					i = j;
+					
+					//guayaquil 200
+					
+					//10 por minuto
+					
+				
+
+					System.out.println("QUERY REPORTE VENTAS " + QUERYFINAL);
+					QueryResult queryResultRecorre = service.executeQuery(QUERYFINAL);
+					List<Invoice> facturas = (List<Invoice>) queryResultRecorre.getEntities();
+					System.out.println("TOTAL DE FACTURAS OBTENIDAS " + facturas.size());
+					FacturaReporte reporte = new FacturaReporte();
+					for (Invoice invoice : facturas) {
+						reporte = new FacturaReporte();
+						reporte.setCodTipoambiente(tipoAmbiente.get());
+						reporte.setFacFecha(invoice.getTxnDate());
+						reporte.setFacFechaVencimiento(invoice.getTxnDate());
+						reporte.setFacTipoTransaccion("VENTA");
+						reporte.setFacNumeroText(invoice.getDocNumber());
+						reporte.setFacCliente(invoice.getCustomerRef().getName());
+
+						/* Obtener el primer producto */
+						List<Line> itemsRef = invoice.getLine();
+						// OBTENEMOS EL PRIMERO PRODUCTO
+						for (Line item : itemsRef) {
+							reporte.setFacProducto(item.getDescription());
+							break;
+						}
+
+						/* CAMPOS ADICIONALES VENDEDOR */
+						if (invoice.getCustomField().size() > 0) {
+							for (CustomField etiquetas : invoice.getCustomField()) {
+								if (etiquetas.getName().equals("VENDEDOR")) {
+									reporte.setFacVendedor(etiquetas.getStringValue());
+								}
+
+							}
+						}
+
+						/* CALCULOS PARA IVA Y SIN IVA */
+						BigDecimal baseGrabada = BigDecimal.ZERO;
+						BigDecimal baseCero = BigDecimal.ZERO;
+						BigDecimal VALORIVA = BigDecimal.ZERO;
+						for (Line valores : invoice.getTxnTaxDetail().getTaxLine()) {
+							if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
+								baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
+								VALORIVA = VALORIVA.add(valores.getAmount());
+							} else {
+								baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
+							}
+
+						}
+
+						reporte.setFacImporteSujetoImpuesto(baseGrabada.add(baseCero));
+						reporte.setFacImporteImpuesto(VALORIVA);
+						reporte.setFacTotal(invoice.getTotalAmt());
+
+//						BigDecimal saldo = invoice.getTotalAmt().subtract(acumuladoPago);
+						reporte.setFacSaldoTotal(invoice.getBalance());
+
+						// OBTENER LOS PAGOS REALIZADOS A LA FACTURA
+						List<LinkedTxn> listapago = invoice.getLinkedTxn();
+						Payment obtenerPago = null;
+						int posicionPago = 1;
+						BigDecimal acumuladoPago = BigDecimal.ZERO;
+						for (LinkedTxn pago : listapago) {
+							Gson gson = new Gson();
+							String JSON = gson.toJson(pago);
+							System.out.println("FACTURA " + invoice.getId() + "  PAGO A RECORRER  " + JSON);
+							if (!pago.getTxnType().equals("Estimate")) {
+
+								obtenerPago = getPayment(pago.getTxnId());
+								System.out.println("NUMERO PAGO " + posicionPago + "    ID PAGO " + pago.getTxnId()
+										+ "   PAGO " + obtenerPago.getTotalAmt());
+								acumuladoPago = acumuladoPago.add(obtenerPago.getTotalAmt());
+								if (posicionPago == 1) {
+									reporte.setFacCobro1(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro1(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago1(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 2) {
+									reporte.setFacCobro2(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro2(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago2(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 3) {
+									reporte.setFacCobro3(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro3(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago3(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 4) {
+									reporte.setFacCobro4(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro4(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago4(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 5) {
+									reporte.setFacCobro5(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro5(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago5(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 6) {
+									reporte.setFacCobro6(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro6(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago6(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 7) {
+									reporte.setFacCobro7(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro7(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago7(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 8) {
+									reporte.setFacCobro8(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro8(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago8(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 9) {
+									reporte.setFacCobro9(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro9(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago9(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								if (posicionPago == 10) {
+									reporte.setFacCobro10(obtenerPago.getTotalAmt());
+									reporte.setFacFechaCobro10(obtenerPago.getMetaData().getCreateTime());
+									reporte.setFacMetodoPago10(obtenerPago.getPaymentMethodRef() != null
+											? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
+											: "SIN METODO DE PAGO");
+								}
+								posicionPago = posicionPago + 1;
+
+							}
+
+						}
+						reporteFacturasRepository.save(reporte);
+					}
+
 				}
 
-				List<Invoice> facturas = (List<Invoice>) queryResultRecorre.getEntities();
-				System.out.println("TOTAL DE FACTURAS OBTENIDAS " + facturas.size());
-				FacturaReporte reporte = new FacturaReporte();
-				for (Invoice invoice : facturas) {
-					reporte = new FacturaReporte();
-					reporte.setCodTipoambiente(tipoAmbiente.get());
-					reporte.setFacFecha(invoice.getTxnDate());
-					reporte.setFacFechaVencimiento(invoice.getTxnDate());
-					reporte.setFacTipoTransaccion("VENTA");
-					reporte.setFacNumeroText(invoice.getDocNumber());
-					reporte.setFacCliente(invoice.getCustomerRef().getName());
-
-					/* Obtener el primer producto */
-					List<Line> itemsRef = invoice.getLine();
-					// OBTENEMOS EL PRIMERO PRODUCTO
-					for (Line item : itemsRef) {
-						reporte.setFacProducto(item.getDescription());
-						break;
-					}
-
-					/* CAMPOS ADICIONALES VENDEDOR */
-					if (invoice.getCustomField().size() > 0) {
-						for (CustomField etiquetas : invoice.getCustomField()) {
-							if (etiquetas.getName().equals("VENDEDOR")) {
-								reporte.setFacVendedor(etiquetas.getStringValue());
-							}
-
-						}
-					}
-
-					/* CALCULOS PARA IVA Y SIN IVA */
-					BigDecimal baseGrabada = BigDecimal.ZERO;
-					BigDecimal baseCero = BigDecimal.ZERO;
-					BigDecimal VALORIVA = BigDecimal.ZERO;
-					for (Line valores : invoice.getTxnTaxDetail().getTaxLine()) {
-						if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
-							baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
-							VALORIVA = VALORIVA.add(valores.getAmount());
-						} else {
-							baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
-
-						}
-
-					}
-
-					reporte.setFacImporteSujetoImpuesto(baseGrabada.add(baseCero));
-					reporte.setFacImporteImpuesto(VALORIVA);
-					reporte.setFacTotal(invoice.getTotalAmt());
-
-//					BigDecimal saldo = invoice.getTotalAmt().subtract(acumuladoPago);
-					reporte.setFacSaldoTotal(invoice.getBalance());
-
-					// OBTENER LOS PAGOS REALIZADOS A LA FACTURA
-					List<LinkedTxn> listapago = invoice.getLinkedTxn();
-					Payment obtenerPago = null;
-					int posicionPago = 1;
-					BigDecimal acumuladoPago = BigDecimal.ZERO;
-					for (LinkedTxn pago : listapago) {
-						Gson gson = new Gson();
-						String JSON = gson.toJson(pago);
-						System.out.println("FACTURA " + invoice.getId() + "  PAGO A RECORRER  " + JSON);
-						if (!pago.getTxnType().equals("Estimate")) {
-
-							obtenerPago = getPayment(pago.getTxnId());
-							System.out.println("NUMERO PAGO " + posicionPago + "    ID PAGO " + pago.getTxnId()
-									+ "   PAGO " + obtenerPago.getTotalAmt());
-							acumuladoPago = acumuladoPago.add(obtenerPago.getTotalAmt());
-							if (posicionPago == 1) {
-								reporte.setFacCobro1(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro1(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago1(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 2) {
-								reporte.setFacCobro2(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro2(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago2(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 3) {
-								reporte.setFacCobro3(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro3(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago3(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 4) {
-								reporte.setFacCobro4(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro4(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago4(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 5) {
-								reporte.setFacCobro5(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro5(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago5(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 6) {
-								reporte.setFacCobro6(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro6(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago6(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 7) {
-								reporte.setFacCobro7(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro7(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago7(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 8) {
-								reporte.setFacCobro8(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro8(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago8(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 9) {
-								reporte.setFacCobro9(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro9(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago9(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							if (posicionPago == 10) {
-								reporte.setFacCobro10(obtenerPago.getTotalAmt());
-								reporte.setFacFechaCobro10(obtenerPago.getMetaData().getCreateTime());
-								reporte.setFacMetodoPago10(obtenerPago.getPaymentMethodRef() != null
-										? getPaymentMethod(obtenerPago.getPaymentMethodRef().getValue()).getName()
-										: "SIN METODO DE PAGO");
-							}
-							posicionPago = posicionPago + 1;
-
-						}
-
-					}
-					reporteFacturasRepository.save(reporte);
-				}
 			} else {
 
 				System.out.println("REALMID NULL NO PROCESA EL REPORTE");
