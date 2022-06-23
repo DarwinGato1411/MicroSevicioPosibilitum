@@ -26,9 +26,11 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.ec.g2g.global.ValoresGlobales;
 import com.ec.g2g.quickbook.ManejarToken;
+import com.ec.g2g.quickbook.NotasCreditoQB;
 import com.ec.g2g.quickbook.OAuth2PlatformClientFactory;
 import com.ec.g2g.quickbook.QBOServiceHelper;
 import com.ec.g2g.quickbook.ReporteFacturas;
+import com.ec.g2g.quickbook.RetencionesQB;
 import com.ec.g2g.repository.ReporteFacturasRepository;
 import com.ec.g2g.utilitario.RealmId;
 import com.intuit.ipp.data.Attachable;
@@ -85,6 +87,11 @@ public class FacturasController {
 
 	private static final Logger logger = Logger.getLogger(FacturasController.class);
 	private static final String failureMsg = "Failed";
+
+	@Autowired
+	private RetencionesQB retencionesQB;
+	@Autowired
+	private NotasCreditoQB creditoQB;
 
 	@ResponseBody
 	@RequestMapping("/conectar")
@@ -283,31 +290,40 @@ public class FacturasController {
 		return new ResponseEntity<String>("VERIFICAR", httpHeaders, HttpStatus.OK);
 	}
 
-	/*REPORTE DE FACTUTRAS */
+	/* ENVIAMOS EL PDF A QUICK BOOKS */
 	@RequestMapping(value = "/enviar-documentos", method = RequestMethod.GET)
-	@ApiOperation(tags = "Obtener reamlID", value = "Obtienen el identificador la empresa")
-	public ResponseEntity<?> obtenerRealmId() {
+	@ApiOperation(tags = "Envio de documentos a Quick Books", value = "Enviar documentos")
+	public ResponseEntity<?> obtenerRealmId(String nombreArchivo, String pathArchivo, String tipoDocumento,
+			String txtId) {
 
 		final HttpHeaders httpHeaders = new HttpHeaders();
 		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
 		httpHeaders.add("STATUS", "0");
 
 		try {
-			
+
 			// Dataservice
 			DataService service = helper.getDataService(valoresGlobales.REALMID, valoresGlobales.TOKEN);
-			
-			List<AttachableRef>  listaAttach = new ArrayList<AttachableRef>();
+
+			List<AttachableRef> listaAttach = new ArrayList<AttachableRef>();
 			AttachableRef attachableRef = new AttachableRef();
 
 			ReferenceType referenceType = new ReferenceType();
-//			referenceType.setType("Invoice");
-				
-			referenceType.setType(ObjectNameEnumType.INVOICE.toString());
+
+			if (tipoDocumento.equals("FACT")) {
+				referenceType.setType("Invoice");
+			} else if (tipoDocumento.equals("RET")) {
+				referenceType.setType("VendorCredit");
+
+			} else if (tipoDocumento.equals("NTC")) {
+				referenceType.setType("CreditMemo");
+			}
+//				ObjectNameEnumType.CREDIT_MEMO.toString()
+
 //			referenceType.setType(ObjectNameEnumType.VENDOR_CREDIT.toString());
-			
-			referenceType.setValue("5298");
-		
+
+			referenceType.setValue(txtId);
+
 			attachableRef.setEntityRef(referenceType);
 
 			listaAttach.add(attachableRef);
@@ -317,12 +333,13 @@ public class FacturasController {
 			Attachable attachable = new Attachable();
 			attachable.setAttachableRef(listaAttach);
 
-			attachable.setFileName("FACT-003001000002354.pdf");
+			attachable.setFileName(nombreArchivo);
 			attachable.setContentType("application/pdf");
-			java.io.File initialFile = new java.io.File("/opt/posibilitum/FACT-003001000002354.pdf");
+//			"/opt/posibilitum/FACT-003001000002354.pdf"
+			java.io.File initialFile = new java.io.File(pathArchivo);
 			InputStream targetStream = new FileInputStream(initialFile);
 			Attachable uploaded = service.upload(attachable, targetStream);
-			
+
 			return new ResponseEntity<>(uploaded, httpHeaders, HttpStatus.OK);
 		} catch (FMSException e) {
 			// TODO Auto-generated catch block
@@ -335,8 +352,65 @@ public class FacturasController {
 			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
 					HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
 
 	}
 
+	/* METODOS PARA PROBAR LOS DOCUMENTOS */
+	/* ENVIAMOS EL PDF A QUICK BOOKS */
+	@RequestMapping(value = "/probar-factura", method = RequestMethod.GET)
+	@ApiOperation(tags = "Traer Documentos", value = "Facturas")
+	public ResponseEntity<?> probarFacturas() {
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+
+		try {
+
+			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@RequestMapping(value = "/probar-retencion", method = RequestMethod.GET)
+	@ApiOperation(tags = "Traer Documentos", value = "Retencion")
+	public ResponseEntity<?> probarRetencion() {
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+
+		try {
+
+			retencionesQB.obtenerRetenciones();
+
+			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@RequestMapping(value = "/probar-nota-credito", method = RequestMethod.GET)
+	@ApiOperation(tags = "Traer Documentos", value = "Nota de credito")
+	public ResponseEntity<?> probarNotaCredito() {
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+
+		try {
+			creditoQB.obtenerNotaCredito();
+
+			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
 }

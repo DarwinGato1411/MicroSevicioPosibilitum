@@ -93,8 +93,8 @@ public class RetencionCompra implements Serializable {
     @Column(name = "rco_pathret")
     private String rcoPathRet;
     
-    @Column(name = "id_quick")
-    private Integer idQuick;
+	    @Column(name = "id_quick")
+	    private Integer idQuick;
     
     
     @JsonIgnore

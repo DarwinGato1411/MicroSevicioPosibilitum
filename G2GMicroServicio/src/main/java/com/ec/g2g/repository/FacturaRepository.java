@@ -11,6 +11,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.ec.g2g.entidad.Cliente;
+import com.ec.g2g.entidad.Tipoambiente;
 import com.ec.g2g.entidad.Factura;
 
 /**
@@ -24,7 +25,7 @@ public interface FacturaRepository extends CrudRepository<Factura, Integer> {
 	Optional<Factura> findByFacNumeroAndIdCliente(String cliCedula, Cliente cliente);
 
 	Optional<Factura> findByFacSecuencialUnico(String facSecuencialUnico);
-	Optional<Factura> findByFacNumeroText(String facNumText);
+	Optional<Factura> findByFacNumeroTextAndCodTipoambiente(String facNumText,Tipoambiente amb );
 
 	@Query("SELECT u FROM Factura u WHERE  u.txnId =:txnId  and u.codTipoambiente.amRuc =:amRuc")
 	Optional<Factura>findByTxnId(@Param("txnId") Integer idQuick, @Param("amRuc") String amRuc);

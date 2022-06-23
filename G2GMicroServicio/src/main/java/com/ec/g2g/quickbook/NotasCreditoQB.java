@@ -258,7 +258,7 @@ public class NotasCreditoQB {
 			}
 			valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
 			/*CONSULTA A QB Y OBTENER LOS DATOS*/
-			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroText(notacredito.getNumeroFactura());
+			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroTextAndCodTipoambiente(notacredito.getNumeroFactura(),valoresGlobales.TIPOAMBIENTE);
 			if (!facturaRecup.isPresent()) {
 				return "No existe una factura para crear una nota de credito";
 			}
@@ -366,7 +366,7 @@ public class NotasCreditoQB {
 								taxRatePorcet = taxrate;
 							}
 
-						}
+						}	
 					}
 
 				}
