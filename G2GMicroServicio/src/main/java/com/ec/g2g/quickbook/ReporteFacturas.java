@@ -118,8 +118,11 @@ public class ReporteFacturas {
 			if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
 				// get DataService
 				DataService service = helper.getDataService(realmId, accessToken);
-				String sqlInicial = "select * from Invoice where MetaData.CreateTime >= '" + format.format(inicio)
-						+ "T00:00:00-07:00' order by id asc MAXRESULTS  1";
+				
+//				String sqlInicial = "select * from Invoice where MetaData.CreateTime >= '" + format.format(inicio)
+//				+ "T00:00:00-07:00' order by id asc MAXRESULTS  1";
+				String sqlInicial = "select * from Invoice where TxnDate >= '" + format.format(inicio)
+						+ "' order by id asc MAXRESULTS  1";
 
 				QueryResult queryResult = service.executeQuery(sqlInicial);
 
@@ -131,8 +134,8 @@ public class ReporteFacturas {
 //				+ "T00:00:00-07:00" + "' and  MetaData.CreateTime <='" + format.format(fin)
 //				+ "T23:59:00-07:00'";
 
-				String sqlFinal = "select * from Invoice where MetaData.CreateTime <='" + format.format(fin)
-						+ "T23:59:00-07:00' order by id desc MAXRESULTS  1";
+				String sqlFinal = "select * from Invoice where TxnDate <='" + format.format(fin)
+						+ "' order by id desc MAXRESULTS  1";
 
 				QueryResult queryResultFinal = service.executeQuery(sqlFinal);
 				List<Invoice> facturaFinal = (List<Invoice>) queryResultFinal.getEntities();
@@ -151,7 +154,7 @@ public class ReporteFacturas {
 					}
 
 					/* QUERY PARA TRAER DE 100 en 100 */
-					String QUERYFINAL = "select * from Invoice where Id >='" + i + "' and Id <='" + j
+					String QUERYFINAL = "select * from Invoice where Id >='" + i + "' and Id <'" + j
 							+ "' order by id asc";
 					/* valor inicial para el siguiente query */
 					i = j;

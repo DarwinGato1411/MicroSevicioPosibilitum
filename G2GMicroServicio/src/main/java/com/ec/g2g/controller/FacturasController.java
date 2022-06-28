@@ -303,7 +303,8 @@ public class FacturasController {
 		try {
 
 			// Dataservice
-			DataService service = helper.getDataService(valoresGlobales.REALMID, valoresGlobales.TOKEN);
+			String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
+			DataService service = helper.getDataService(valoresGlobales.REALMID, accessToken);
 
 			List<AttachableRef> listaAttach = new ArrayList<AttachableRef>();
 			AttachableRef attachableRef = new AttachableRef();

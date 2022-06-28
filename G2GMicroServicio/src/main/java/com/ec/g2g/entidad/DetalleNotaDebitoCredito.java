@@ -37,14 +37,14 @@ public class DetalleNotaDebitoCredito implements Serializable {
 	// consider using these annotations to enforce field validation
 	@Column(name = "det_cantidad")
 	private BigDecimal detCantidad;
-	@Size(max = 100)
+
 	@Column(name = "det_descripcion")
 	private String detDescripcion;
 	@Column(name = "det_subtotal")
 	private BigDecimal detSubtotal;
 	@Column(name = "det_total")
 	private BigDecimal detTotal;
-	@Size(max = 45)
+	
 	@Column(name = "det_tipo_venta")
 	private String detTipoVenta;
 	@Column(name = "det_iva")
@@ -65,7 +65,7 @@ public class DetalleNotaDebitoCredito implements Serializable {
 	private BigDecimal detCantpordescuento;
 	@Column(name = "det_subtotaldescuentoporcantidad")
 	private BigDecimal detSubtotaldescuentoporcantidad;
-	@Size(max = 2)
+	
 	@Column(name = "det_cod_tipo_venta")
 	private String detCodTipoVenta;
 	@JoinColumn(name = "id_producto", referencedColumnName = "id_producto")
