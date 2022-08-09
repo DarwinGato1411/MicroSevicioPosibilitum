@@ -118,6 +118,9 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 	@Value("${posibilitum.url.facturas}")
 	String serviceURLFACTURAS;
 
+	@Value("${posibilitum.url.reenvio}")
+	String serviceURLREENVIO;
+
 	@Value("${posibilitum.nombre.empresa}")
 	String NOMBREEMPRESA;
 
@@ -296,6 +299,18 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 
 	}
 
+	// dejarlo cada 8 minutos
+	@Scheduled(fixedRate = 4 * 60 * 1000)
+	public void tareaReenviarFacturas() {
+		RestTemplate restTemplate = new RestTemplate();
+		RespuestaDocumentos respueta = restTemplate.getForObject(serviceURLREENVIO + RUCEMPRESA,
+				RespuestaDocumentos.class);
+		Gson gson = new Gson();
+		String JSON = gson.toJson(respueta);
+		System.out.println("RESPUESTA FACTURAS  AUTORIZADAS" + JSON);
+
+	}
+
 //dejarlo cada 8 minutos
 	@Scheduled(fixedRate = 5 * 60 * 1000)
 	public void tareaProcesaFacturas() {
@@ -304,7 +319,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 				RespuestaDocumentos.class);
 		Gson gson = new Gson();
 		String JSON = gson.toJson(respueta);
-		System.out.println("RESPUESTA FACTURAS  AUTORIZADAS" + JSON);
+		System.out.println("RESPUESTA REENVIO FACTURA" + JSON);
 
 	}
 
@@ -752,9 +767,7 @@ public class G2GMicroServicioApplication extends SpringBootServletInitializer {
 						invoice.setAllowIPNPayment(Boolean.TRUE);
 						/* actualizo la factura en QB */
 						service.update(invoice);
-						
 
-						
 //							attachableRef.setEntityRef(invoice);
 
 					}
