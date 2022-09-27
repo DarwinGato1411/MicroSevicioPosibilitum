@@ -25,6 +25,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.ec.g2g.global.ValoresGlobales;
+import com.ec.g2g.quickbook.FacturasQB;
 import com.ec.g2g.quickbook.ManejarToken;
 import com.ec.g2g.quickbook.NotasCreditoQB;
 import com.ec.g2g.quickbook.OAuth2PlatformClientFactory;
@@ -92,6 +93,9 @@ public class FacturasController {
 	private RetencionesQB retencionesQB;
 	@Autowired
 	private NotasCreditoQB creditoQB;
+	
+	@Autowired
+	private FacturasQB facturasQB;
 
 	@ResponseBody
 	@RequestMapping("/conectar")
@@ -366,7 +370,7 @@ public class FacturasController {
 		httpHeaders.add("STATUS", "0");
 
 		try {
-
+			facturasQB.obtenerFacturas();
 			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
