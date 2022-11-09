@@ -93,7 +93,7 @@ public class FacturasController {
 	private RetencionesQB retencionesQB;
 	@Autowired
 	private NotasCreditoQB creditoQB;
-	
+
 	@Autowired
 	private FacturasQB facturasQB;
 
@@ -410,6 +410,24 @@ public class FacturasController {
 		try {
 			creditoQB.obtenerNotaCredito();
 
+			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return new ResponseEntity<RealmId>(new RealmId(valoresGlobales.REALMID, valoresGlobales.TOKEN), httpHeaders,
+					HttpStatus.INTERNAL_SERVER_ERROR);
+		}
+	}
+
+	@RequestMapping(value = "/probar-factura-id", method = RequestMethod.GET)
+	@ApiOperation(tags = "Traer Documentos", value = "Facturas")
+	public ResponseEntity<?> probarFacturas(Integer idFactura) {
+		final HttpHeaders httpHeaders = new HttpHeaders();
+		httpHeaders.setContentType(MediaType.APPLICATION_JSON);
+		httpHeaders.add("STATUS", "0");
+
+		try {
+			facturasQB.traerporId(idFactura);
 			return new ResponseEntity<>("Correcto", httpHeaders, HttpStatus.OK);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
