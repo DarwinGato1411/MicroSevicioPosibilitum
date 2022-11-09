@@ -208,7 +208,8 @@ public class FacturasQB {
 				Producto producto = new Producto();
 				Factura factura = new Factura();
 				DetalleFactura det = new DetalleFactura();
-
+				System.out.println("idInicial " + idInicial);
+				System.out.println("idFinal " + idFinal);
 				if(idInicial==idFinal) {
 					traerporId(idInicial);
 					
