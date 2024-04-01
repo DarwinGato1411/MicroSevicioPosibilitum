@@ -159,7 +159,7 @@ public class FacturasQB {
 		Calendar c = Calendar.getInstance();
 		c.setTime(fechaConsulta);
 		// reta loos dias que necesitas
-		c.add(Calendar.DATE, -12);
+		c.add(Calendar.DATE, -15);
 		fechaConsulta = c.getTime();
 
 		System.out.println("format.fechaConsulta  " + format.format(fechaConsulta));
@@ -210,11 +210,11 @@ public class FacturasQB {
 				DetalleFactura det = new DetalleFactura();
 				System.out.println("idInicial " + idInicial);
 				System.out.println("idFinal " + idFinal);
-				if(idInicial==idFinal) {
+				if (idInicial == idFinal) {
 					traerporId(idInicial);
-					
+
 				}
-				
+
 				int j = idInicial + 100;
 				for (int i = idInicial; i < idFinal; j = j + 100) {
 					/* Colocal el valor del ultimo query */
@@ -543,12 +543,37 @@ public class FacturasQB {
 									det.setIdProducto(producto);
 								}
 								// revision con Paul es el campo getUnitPrice
-								BigDecimal precioUnitario = item.getGroupLineDetail() != null
-										? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail()
-												.getUnitPrice()
-										: item.getSalesItemLineDetail() != null
-												? item.getSalesItemLineDetail().getUnitPrice()
-												: BigDecimal.ZERO;
+//								BigDecimal precioUnitario = item.getGroupLineDetail() != null
+//										? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail()
+//												.getUnitPrice()
+//										: item.getSalesItemLineDetail() != null
+//												? item.getSalesItemLineDetail().getUnitPrice()
+//												: BigDecimal.ZERO;
+
+								BigDecimal cantidadPaquete = item.getGroupLineDetail() != null										
+												? item.getGroupLineDetail().getQuantity()
+												: item.getSalesItemLineDetail() != null
+																? item.getSalesItemLineDetail().getQty()
+																: BigDecimal.ONE;
+
+								BigDecimal montoTotalItem = item.getGroupLineDetail() != null
+										? item.getGroupLineDetail().getLine().get(0).getAmount()
+										: item.getAmount();
+								BigDecimal precioUnitario = BigDecimal.ZERO;
+								if (item.getGroupLineDetail() != null) {
+									precioUnitario = montoTotalItem.divide(cantidadPaquete, 5, RoundingMode.CEILING);
+								} else {
+
+									precioUnitario = item.getSalesItemLineDetail().getUnitPrice();
+								}
+
+//								BigDecimal precioUnitario = item.getGroupLineDetail() != null
+//								? item.getGroupLineDetail().getQuantity()!=null? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail()
+//										.getUnitPrice()
+//								: item.getSalesItemLineDetail() != null
+//										? item.getSalesItemLineDetail().getUnitPrice()
+//										: BigDecimal.ZERO;
+
 								BigDecimal valorDescuento = BigDecimal.ZERO;
 								if (precioUnitario.doubleValue() > 0 && porcentajeDescuento.doubleValue() > 0) {
 									valorDescuento = precioUnitario.multiply(porcentajeDescuento)
@@ -565,20 +590,24 @@ public class FacturasQB {
 
 								BigDecimal precioConDescuento = precioUnitario.subtract(
 										precioUnitario.multiply(porcentajeDescuento).divide(BigDecimal.valueOf(100)));
-								BigDecimal cantidadProductos = item.getGroupLineDetail() != null
-										? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
-										: item.getSalesItemLineDetail() != null
-												? item.getSalesItemLineDetail().getQty() != null
-														? item.getSalesItemLineDetail().getQty()
-														: BigDecimal.ONE
-												: BigDecimal.ONE;
+//								
+//								BigDecimal cantidadProductos = item.getGroupLineDetail() != null
+//										? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
+//										: item.getSalesItemLineDetail() != null
+//												? item.getSalesItemLineDetail().getQty() != null
+//														? item.getSalesItemLineDetail().getQty()
+//														: BigDecimal.ONE
+//												: BigDecimal.ONE;
+
+								BigDecimal cantidadProductos = cantidadPaquete;
 
 								det.setIdFactura(factura);
 								/* obtiene la cantidad dependiendo si es un item o grupo de items */
 								BigDecimal cantidad = item.getGroupLineDetail() != null
 										? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getQty()
 										: item.getSalesItemLineDetail().getQty();
-								det.setDetCantidad(cantidad);
+
+								det.setDetCantidad(cantidadPaquete);
 								det.setDetDescripcion(item.getDescription());
 								det.setDetSubtotal(precioUnitario);
 
@@ -857,7 +886,6 @@ public class FacturasQB {
 		fechaConsulta = c.getTime();
 
 		System.out.println("format.fechaConsulta  " + format.format(fechaConsulta));
-		
 
 		if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
 			Tipoambiente recup = tipoAmbiente.get();
@@ -872,7 +900,7 @@ public class FacturasQB {
 			String accessToken = manejarToken.refreshToken(valoresGlobales.REFRESHTOKEN);
 			try {
 				DataService service = helper.getDataService(realmId, accessToken);
-				
+
 				// get DataService
 
 				Producto producto = new Producto();

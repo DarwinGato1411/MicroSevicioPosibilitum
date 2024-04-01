@@ -260,6 +260,8 @@ public class NotasCreditoQB {
 			/*CONSULTA A QB Y OBTENER LOS DATOS*/
 			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroTextAndCodTipoambiente(notacredito.getNumeroFactura(),valoresGlobales.TIPOAMBIENTE);
 			if (!facturaRecup.isPresent()) {
+				System.out.println(notacredito.getNumeroFactura());
+				System.out.println(valoresGlobales.TIPOAMBIENTE);
 				return "No existe una factura para crear una nota de credito";
 			}
 			notacredito.setIdFactura(facturaRecup.get());

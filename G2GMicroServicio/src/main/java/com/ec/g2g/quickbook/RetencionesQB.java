@@ -123,7 +123,7 @@ public class RetencionesQB {
 			Calendar c = Calendar.getInstance();
 			c.setTime(fechaConsulta);
 			// reta loos dias que necesitas
-			c.add(Calendar.DATE, -5);
+			c.add(Calendar.DATE, -15);
 			fechaConsulta = c.getTime();
 
 			if (valoresGlobales.REALMID != null && valoresGlobales.REFRESHTOKEN != null) {
