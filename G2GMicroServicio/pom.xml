@@ -141,7 +141,7 @@
 	</dependencies>
 
 	<build>
-	<finalName>SIPENERGY8808</finalName>
+	<finalName>TuContador8801</finalName>
 		<plugins>
 			<plugin>
 				<groupId>org.springframework.boot</groupId>

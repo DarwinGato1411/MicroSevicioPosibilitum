@@ -1085,9 +1085,9 @@ public class FacturasQB {
 						// subtotal
 						factura.setFacSubtotal(subtotalFac);
 //						 Iva
-						factura.setFacIva(valorIva);
-						factura.setFacIva5(valorIva5);
-						factura.setFacIva15(valorIva15);
+						factura.setFacIva(valorIva==null?BigDecimal.ZERO:valorIva);
+						factura.setFacIva5(valorIva5==null?BigDecimal.ZERO:valorIva5);
+						factura.setFacIva15(valorIva15==null?BigDecimal.ZERO:valorIva15);
 
 //					 TOTAL DE LA FATURA
 						BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
@@ -1110,8 +1110,8 @@ public class FacturasQB {
 
 						factura.setFacTotalBaseCero(baseCero);
 						factura.setFacTotalBaseGravaba(baseGrabada);
-						factura.setFacSubt5(baseGrabada5);
-						factura.setFacSubt15(baseGrabada15);
+						factura.setFacSubt5(baseGrabada5==null?BigDecimal.ZERO:baseGrabada5);
+						factura.setFacSubt15(baseGrabada15==null?BigDecimal.ZERO:baseGrabada15);
 
 						factura.setCodigoPorcentaje("2");
 						factura.setFacPorcentajeIva("12");
