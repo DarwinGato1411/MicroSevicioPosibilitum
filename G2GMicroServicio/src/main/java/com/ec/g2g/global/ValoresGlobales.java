@@ -18,6 +18,14 @@ public class ValoresGlobales {
 	public BigDecimal SACARIVA=BigDecimal.valueOf(0.12);
 	public BigDecimal SUMARIVA=BigDecimal.valueOf(1.12);
 	
+	public BigDecimal IVA5=BigDecimal.valueOf(5);
+	public BigDecimal SACARIVA5=BigDecimal.valueOf(0.05);
+	public BigDecimal SUMARIVA5=BigDecimal.valueOf(1.05);
+	
+	public BigDecimal IVA15=BigDecimal.valueOf(15);
+	public BigDecimal SACARIVA15=BigDecimal.valueOf(0.15);
+	public BigDecimal SUMARIVA15=BigDecimal.valueOf(1.15);
+	
 
 	public String getCSRF() {
 		return CSRF;
@@ -81,6 +89,54 @@ public class ValoresGlobales {
 
 	public void setSUMARIVA(BigDecimal sUMARIVA) {
 		SUMARIVA = sUMARIVA;
+	}
+
+	public BigDecimal getIVA5() {
+		return IVA5;
+	}
+
+	public void setIVA5(BigDecimal iVA5) {
+		IVA5 = iVA5;
+	}
+
+	public BigDecimal getSACARIVA5() {
+		return SACARIVA5;
+	}
+
+	public void setSACARIVA5(BigDecimal sACARIVA5) {
+		SACARIVA5 = sACARIVA5;
+	}
+
+	public BigDecimal getSUMARIVA5() {
+		return SUMARIVA5;
+	}
+
+	public void setSUMARIVA5(BigDecimal sUMARIVA5) {
+		SUMARIVA5 = sUMARIVA5;
+	}
+
+	public BigDecimal getIVA15() {
+		return IVA15;
+	}
+
+	public void setIVA15(BigDecimal iVA15) {
+		IVA15 = iVA15;
+	}
+
+	public BigDecimal getSACARIVA15() {
+		return SACARIVA15;
+	}
+
+	public void setSACARIVA15(BigDecimal sACARIVA15) {
+		SACARIVA15 = sACARIVA15;
+	}
+
+	public BigDecimal getSUMARIVA15() {
+		return SUMARIVA15;
+	}
+
+	public void setSUMARIVA15(BigDecimal sUMARIVA15) {
+		SUMARIVA15 = sUMARIVA15;
 	}
 	
 	

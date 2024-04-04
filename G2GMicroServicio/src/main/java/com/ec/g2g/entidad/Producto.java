@@ -130,6 +130,11 @@ public class Producto implements Serializable {
     @Column(name = "prod_fecha_registro")
     @Temporal(TemporalType.DATE)
     private Date prodFechaRegistro;
+    
+    @Column(name = "prod_codigo_iva")
+    private Integer prodCodigoIva;
+    @Column(name = "prod_porcentaje_iva")
+    private Integer prodPorcentajeIva;
 
     public Producto() {
     }
@@ -490,7 +495,23 @@ public class Producto implements Serializable {
     
     
 
-    @Override
+    public Integer getProdCodigoIva() {
+		return prodCodigoIva;
+	}
+
+	public void setProdCodigoIva(Integer prodCodigoIva) {
+		this.prodCodigoIva = prodCodigoIva;
+	}
+
+	public Integer getProdPorcentajeIva() {
+		return prodPorcentajeIva;
+	}
+
+	public void setProdPorcentajeIva(Integer prodPorcentajeIva) {
+		this.prodPorcentajeIva = prodPorcentajeIva;
+	}
+
+	@Override
     public boolean equals(Object object) {
         // TODO: Warning - this method won't work in the case the id fields are not set
         if (!(object instanceof Producto)) {

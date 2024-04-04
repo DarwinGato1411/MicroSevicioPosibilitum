@@ -284,11 +284,19 @@ public class FacturasQB {
 
 							/* CALCULOS PARA IVA Y SIN IVA */
 							BigDecimal baseGrabada = BigDecimal.ZERO;
+							BigDecimal baseGrabada15 = BigDecimal.ZERO;
+							BigDecimal baseGrabada5 = BigDecimal.ZERO;
 							BigDecimal baseCero = BigDecimal.ZERO;
 
 							for (Line valores : invoice.getTxnTaxDetail().getTaxLine()) {
 								if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
 									baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
+								} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 15) {
+									baseGrabada15 = baseGrabada15.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
+								} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 5) {
+									baseGrabada5 = baseGrabada5.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
 								} else {
 									baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
 
@@ -303,6 +311,8 @@ public class FacturasQB {
 							BigDecimal valorSinDescuento = BigDecimal.ZERO;
 							BigDecimal subtotalFac = BigDecimal.ZERO;
 							BigDecimal valorIva = BigDecimal.ZERO;
+							BigDecimal valorIva5 = BigDecimal.ZERO;
+							BigDecimal valorIva15 = BigDecimal.ZERO;
 
 							for (Line item : itemsRefDesc) {
 
@@ -332,8 +342,12 @@ public class FacturasQB {
 //							porcentajeDescuento = ArchivoUtils.redondearDecimales(porcentajeDescuento, 8);
 							}
 
-							subtotalFac = baseGrabada.add(baseCero);
+							/* CALCULO DEL IVA PARA CADA BASE IMPONIBLE */
+							subtotalFac = baseGrabada.add(baseCero).add(valorIva5).add(baseGrabada15);
 							valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
+							valorIva5 = baseGrabada5.multiply(valoresGlobales.SACARIVA5);
+							valorIva15 = baseGrabada15.multiply(valoresGlobales.SACARIVA15);
+
 							factura.setFacFecha(invoice.getTxnDate());
 							factura.setFacFechaCobroPlazo(invoice.getDueDate());
 							/* CALCULAR LOS DIAS DE PLAZO */
@@ -347,8 +361,12 @@ public class FacturasQB {
 
 							// subtotal
 							factura.setFacSubtotal(subtotalFac);
+
 //					 Iva
 							factura.setFacIva(valorIva);
+							factura.setFacIva5(valorIva5);
+							factura.setFacIva15(valorIva15);
+
 //					 TOTAL DE LA FATURA
 							BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
 							factura.setFacTotal(invoice.getTotalAmt());
@@ -367,8 +385,12 @@ public class FacturasQB {
 							factura.setFacDescuento(montoDescuento);
 							factura.setFacCodIce("3");
 							factura.setFacCodIva("2");
+
 							factura.setFacTotalBaseCero(baseCero);
 							factura.setFacTotalBaseGravaba(baseGrabada);
+							factura.setFacSubt5(baseGrabada5);
+							factura.setFacSubt15(baseGrabada15);
+
 							factura.setCodigoPorcentaje("2");
 							factura.setFacPorcentajeIva("12");
 							factura.setFacMoneda(invoice.getCurrencyRef().getValue());
@@ -492,9 +514,15 @@ public class FacturasQB {
 
 								}
 
+								/* Podemos obtener el porcentaje taxRatePorcet.getRateValue().doubleValue() */
 								Boolean prodGrabaIva = taxRatePorcet != null
 										? taxRatePorcet.getRateValue().doubleValue() == 0 ? Boolean.FALSE : Boolean.TRUE
 										: Boolean.FALSE;
+
+								/* para calculo de los impuestos */
+								BigDecimal porcentaje = taxRatePorcet.getRateValue();
+								BigDecimal factorIva = (porcentaje.divide(BigDecimal.valueOf(100.0)));
+								BigDecimal factorSacarSubtotal = (factorIva.add(BigDecimal.ONE));
 
 								producto.setProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
 								producto.setProdNombre(itemProd.getDescription());
@@ -502,7 +530,7 @@ public class FacturasQB {
 								producto.setPordCostoVentaRef(BigDecimal.ZERO);
 								producto.setPordCostoVentaFinal(prodGrabaIva
 										? (itemProd.getUnitPrice() == null ? BigDecimal.ZERO
-												: itemProd.getUnitPrice().multiply(valoresGlobales.IVA))
+												: itemProd.getUnitPrice().multiply(porcentaje))
 										: itemProd.getUnitPrice());
 								producto.setProdEstado(1);
 								producto.setProdTrasnporte(BigDecimal.ZERO);
@@ -533,6 +561,16 @@ public class FacturasQB {
 								producto.setProdUnidadMedida("UNIDAD");
 								producto.setProdUnidadConversion("UNIDAD");
 
+								if (porcentaje.intValue() == 15) {
+									producto.setProdCodigoIva(4);
+								} else if (porcentaje.intValue() == 5) {
+									producto.setProdCodigoIva(5);
+								} else {
+									producto.setProdCodigoIva(0);
+								}
+
+								producto.setProdPorcentajeIva(porcentaje.intValue());
+
 								Optional<Producto> prodRecup = productoRepository
 										.findByProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
 
@@ -550,11 +588,10 @@ public class FacturasQB {
 //												? item.getSalesItemLineDetail().getUnitPrice()
 //												: BigDecimal.ZERO;
 
-								BigDecimal cantidadPaquete = item.getGroupLineDetail() != null										
-												? item.getGroupLineDetail().getQuantity()
-												: item.getSalesItemLineDetail() != null
-																? item.getSalesItemLineDetail().getQty()
-																: BigDecimal.ONE;
+								BigDecimal cantidadPaquete = item.getGroupLineDetail() != null
+										? item.getGroupLineDetail().getQuantity()
+										: item.getSalesItemLineDetail() != null ? item.getSalesItemLineDetail().getQty()
+												: BigDecimal.ONE;
 
 								BigDecimal montoTotalItem = item.getGroupLineDetail() != null
 										? item.getGroupLineDetail().getLine().get(0).getAmount()
@@ -614,14 +651,14 @@ public class FacturasQB {
 								BigDecimal ivaDet = BigDecimal.ZERO;
 
 								ivaDet = prodGrabaIva
-										? (precioConDescuento.multiply(valoresGlobales.SACARIVA)
-												.multiply(cantidadProductos))
+										? (precioConDescuento.multiply(factorIva).multiply(cantidadProductos))
 										: BigDecimal.ZERO;
-								det.setDetTotal(prodGrabaIva ? precioConDescuento.multiply(valoresGlobales.SUMARIVA)
+								det.setDetTotal(prodGrabaIva ? precioConDescuento.multiply(factorSacarSubtotal)
 										: precioConDescuento);
 								det.setDetTipoVenta("NORMAL");
 //						System.out.println("det.getDetTotal() " + det.getDetTotal());
 //						System.out.println("cantidadProductos " + cantidadProductos);
+
 								det.setDetTotalconiva(det.getDetTotal().multiply(cantidadProductos));
 
 								det.setDetIva(prodGrabaIva ? ivaDet : BigDecimal.ZERO);
@@ -634,8 +671,17 @@ public class FacturasQB {
 								det.setDetSubtotaldescuentoporcantidad(precioConDescuento.multiply(cantidadProductos));
 								det.setDetTipoVenta("0");
 								det.setDetCodIva("2");
-								det.setDetTarifa(prodGrabaIva ? BigDecimal.valueOf(12) : BigDecimal.ZERO);
-								det.setDetCodPorcentaje(prodGrabaIva ? "2" : "0");
+								det.setDetTarifa(porcentaje);
+
+								if (porcentaje.intValue() == 15) {
+
+									det.setDetCodPorcentaje("4");
+								} else if (porcentaje.intValue() == 5) {
+
+									det.setDetCodPorcentaje("5");
+								} else {
+									det.setDetCodPorcentaje("0");
+								}
 								/* Detalle de factura */
 								detalleFacturaRepository.save(det);
 							}
@@ -958,11 +1004,19 @@ public class FacturasQB {
 
 						/* CALCULOS PARA IVA Y SIN IVA */
 						BigDecimal baseGrabada = BigDecimal.ZERO;
+						BigDecimal baseGrabada15 = BigDecimal.ZERO;
+						BigDecimal baseGrabada5 = BigDecimal.ZERO;
 						BigDecimal baseCero = BigDecimal.ZERO;
 
 						for (Line valores : invoice.getTxnTaxDetail().getTaxLine()) {
 							if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
 								baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
+							} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 15) {
+								baseGrabada15 = baseGrabada15.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
+							} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 5) {
+								baseGrabada5 = baseGrabada5.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
 							} else {
 								baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
 
@@ -977,6 +1031,8 @@ public class FacturasQB {
 						BigDecimal valorSinDescuento = BigDecimal.ZERO;
 						BigDecimal subtotalFac = BigDecimal.ZERO;
 						BigDecimal valorIva = BigDecimal.ZERO;
+						BigDecimal valorIva5 = BigDecimal.ZERO;
+						BigDecimal valorIva15 = BigDecimal.ZERO;
 
 						for (Line item : itemsRefDesc) {
 
@@ -1006,7 +1062,14 @@ public class FacturasQB {
 //							porcentajeDescuento = ArchivoUtils.redondearDecimales(porcentajeDescuento, 8);
 						}
 
-						subtotalFac = baseGrabada.add(baseCero);
+//						subtotalFac = baseGrabada.add(baseCero);
+
+						/* CALCULO DEL IVA PARA CADA BASE IMPONIBLE */
+						subtotalFac = baseGrabada.add(baseCero).add(valorIva5).add(baseGrabada15);
+						valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
+						valorIva5 = baseGrabada5.multiply(valoresGlobales.SACARIVA5);
+						valorIva15 = baseGrabada15.multiply(valoresGlobales.SACARIVA15);
+
 						valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
 						factura.setFacFecha(invoice.getTxnDate());
 						factura.setFacFechaCobroPlazo(invoice.getDueDate());
@@ -1021,8 +1084,11 @@ public class FacturasQB {
 
 						// subtotal
 						factura.setFacSubtotal(subtotalFac);
-//					 Iva
+//						 Iva
 						factura.setFacIva(valorIva);
+						factura.setFacIva5(valorIva5);
+						factura.setFacIva15(valorIva15);
+
 //					 TOTAL DE LA FATURA
 						BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
 						factura.setFacTotal(invoice.getTotalAmt());
@@ -1041,8 +1107,12 @@ public class FacturasQB {
 						factura.setFacDescuento(montoDescuento);
 						factura.setFacCodIce("3");
 						factura.setFacCodIva("2");
+
 						factura.setFacTotalBaseCero(baseCero);
 						factura.setFacTotalBaseGravaba(baseGrabada);
+						factura.setFacSubt5(baseGrabada5);
+						factura.setFacSubt15(baseGrabada15);
+
 						factura.setCodigoPorcentaje("2");
 						factura.setFacPorcentajeIva("12");
 						factura.setFacMoneda(invoice.getCurrencyRef().getValue());
@@ -1170,14 +1240,20 @@ public class FacturasQB {
 									? taxRatePorcet.getRateValue().doubleValue() == 0 ? Boolean.FALSE : Boolean.TRUE
 									: Boolean.FALSE;
 
+							/* para calculo de los impuestos */
+							BigDecimal porcentaje = taxRatePorcet.getRateValue();
+							BigDecimal factorIva = (porcentaje.divide(BigDecimal.valueOf(100.0)));
+							BigDecimal factorSacarSubtotal = (factorIva.add(BigDecimal.ONE));
+
 							producto.setProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
 							producto.setProdNombre(itemProd.getDescription());
 							producto.setPordCostoCompra(BigDecimal.ZERO);
 							producto.setPordCostoVentaRef(BigDecimal.ZERO);
-							producto.setPordCostoVentaFinal(prodGrabaIva
-									? (itemProd.getUnitPrice() == null ? BigDecimal.ZERO
-											: itemProd.getUnitPrice().multiply(valoresGlobales.IVA))
-									: itemProd.getUnitPrice());
+							producto.setPordCostoVentaFinal(
+									prodGrabaIva
+											? (itemProd.getUnitPrice() == null ? BigDecimal.ZERO
+													: itemProd.getUnitPrice().multiply(porcentaje))
+											: itemProd.getUnitPrice());
 							producto.setProdEstado(1);
 							producto.setProdTrasnporte(BigDecimal.ZERO);
 							producto.setProdIva(BigDecimal.ZERO);
@@ -1206,6 +1282,16 @@ public class FacturasQB {
 							producto.setProdFactorConversion(BigDecimal.ONE);
 							producto.setProdUnidadMedida("UNIDAD");
 							producto.setProdUnidadConversion("UNIDAD");
+
+							if (porcentaje.intValue() == 15) {
+								producto.setProdCodigoIva(4);
+							} else if (porcentaje.intValue() == 5) {
+								producto.setProdCodigoIva(5);
+							} else {
+								producto.setProdCodigoIva(0);
+							}
+
+							producto.setProdPorcentajeIva(porcentaje.intValue());
 
 							Optional<Producto> prodRecup = productoRepository
 									.findByProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
@@ -1278,8 +1364,17 @@ public class FacturasQB {
 							det.setDetSubtotaldescuentoporcantidad(precioConDescuento.multiply(cantidadProductos));
 							det.setDetTipoVenta("0");
 							det.setDetCodIva("2");
-							det.setDetTarifa(prodGrabaIva ? BigDecimal.valueOf(12) : BigDecimal.ZERO);
-							det.setDetCodPorcentaje(prodGrabaIva ? "2" : "0");
+							det.setDetTarifa(porcentaje);
+
+							if (porcentaje.intValue() == 15) {
+
+								det.setDetCodPorcentaje("4");
+							} else if (porcentaje.intValue() == 5) {
+
+								det.setDetCodPorcentaje("5");
+							} else {
+								det.setDetCodPorcentaje("0");
+							}
 							/* Detalle de factura */
 							detalleFacturaRepository.save(det);
 						}
