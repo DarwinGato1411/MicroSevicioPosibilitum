@@ -44,7 +44,7 @@ public class DetalleNotaDebitoCredito implements Serializable {
 	private BigDecimal detSubtotal;
 	@Column(name = "det_total")
 	private BigDecimal detTotal;
-	
+
 	@Column(name = "det_tipo_venta")
 	private String detTipoVenta;
 	@Column(name = "det_iva")
@@ -65,7 +65,7 @@ public class DetalleNotaDebitoCredito implements Serializable {
 	private BigDecimal detCantpordescuento;
 	@Column(name = "det_subtotaldescuentoporcantidad")
 	private BigDecimal detSubtotaldescuentoporcantidad;
-	
+
 	@Column(name = "det_cod_tipo_venta")
 	private String detCodTipoVenta;
 	@JoinColumn(name = "id_producto", referencedColumnName = "id_producto")
@@ -80,6 +80,11 @@ public class DetalleNotaDebitoCredito implements Serializable {
 
 	@Column(name = "prod_graba_iva")
 	private Boolean prodGrabaIva;
+
+	@Column(name = "codigo_porcentaje")
+	private String codigoPorcentaje;
+	@Column(name = "porcentaje_iva")
+	private String porcentajeIva;
 
 	public DetalleNotaDebitoCredito() {
 	}
@@ -294,5 +299,23 @@ public class DetalleNotaDebitoCredito implements Serializable {
 	public String toString() {
 		return "com.ec.entidad.DetalleNotaDebitoCredito[ idDetalleNota=" + idDetalleNota + " ]";
 	}
+
+	public String getCodigoPorcentaje() {
+		return codigoPorcentaje;
+	}
+
+	public void setCodigoPorcentaje(String codigoPorcentaje) {
+		this.codigoPorcentaje = codigoPorcentaje;
+	}
+
+	public String getPorcentajeIva() {
+		return porcentajeIva;
+	}
+
+	public void setPorcentajeIva(String porcentajeIva) {
+		this.porcentajeIva = porcentajeIva;
+	}
+
+	
 
 }

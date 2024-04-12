@@ -50,7 +50,7 @@ import com.intuit.ipp.services.QueryResult;
 @Service
 public class NotasCreditoQB {
 
-	@Autowired	
+	@Autowired
 	public QBOServiceHelper helper;
 
 	@Autowired
@@ -86,7 +86,9 @@ public class NotasCreditoQB {
 		// cambiar la forma de traer el ultimo secuencial
 		return entityManager.createQuery(
 				"SELECT u FROM NotaCreditoDebito u WHERE u.codTipoambiente =:codTipoambiente ORDER BY u.facNumero DESC",
-				NotaCreditoDebito.class).setParameter("codTipoambiente", valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente()).setMaxResults(1).getResultList();
+				NotaCreditoDebito.class)
+				.setParameter("codTipoambiente", valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente())
+				.setMaxResults(1).getResultList();
 	}
 
 	public void obtenerNotaCredito() {
@@ -137,18 +139,17 @@ public class NotasCreditoQB {
 //							&& vendorCredit.getDocNumber().toUpperCase().contains("NC")) {
 //						String separaNumero[] = vendorCredit.getDocNumber().split("-");
 //						String numeroRetencion = separaNumero[1];
-						/* VALIDAR SI EXISTE LA RETENCION */
-						Optional<NotaCreditoDebito> verificaDoc = notaCreditoRepository.findByTxnId(
-								Integer.valueOf(vendorCredit.getId()),
-								valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente());
-						if (!verificaDoc.isPresent()) {
-							System.out.println(
-									"PROCESANDO NOTAS DE CREDITO --> " + mapperVendorToNotaCredito(vendorCredit));
-						} else {
-							System.out.println(
-									"LA NOTA DE CREDITO YA EXISTE " + vendorCredit.getDocNumber().toUpperCase());
+					/* VALIDAR SI EXISTE LA RETENCION */
+					Optional<NotaCreditoDebito> verificaDoc = notaCreditoRepository.findByTxnId(
+							Integer.valueOf(vendorCredit.getId()),
+							valoresGlobales.getTIPOAMBIENTE().getCodTipoambiente());
+					if (!verificaDoc.isPresent()) {
+						System.out
+								.println("PROCESANDO NOTAS DE CREDITO --> " + mapperVendorToNotaCredito(vendorCredit));
+					} else {
+						System.out.println("LA NOTA DE CREDITO YA EXISTE " + vendorCredit.getDocNumber().toUpperCase());
 
-						}
+					}
 
 //					} else {
 //						System.out.println("RETENCION NO PROCESADA EL NUMERO DE FACTURA NO CUMPLE CON LA ESTRUCTURA "
@@ -200,7 +201,7 @@ public class NotasCreditoQB {
 							// TODO: handle exception
 						}
 					} else if (etiquetas.getDefinitionId().equals("2")) {
-						notacredito.setFacDescripcion(etiquetas.getStringValue()); 
+						notacredito.setFacDescripcion(etiquetas.getStringValue());
 					} else if (etiquetas.getDefinitionId().equals("3")) {
 
 						notacredito.setNumeroFactura(etiquetas.getStringValue());
@@ -211,8 +212,12 @@ public class NotasCreditoQB {
 
 			/* CALCULOS PARA IVA Y SIN IVA */
 			BigDecimal baseGrabada = BigDecimal.ZERO;
+			BigDecimal baseGrabada15 = BigDecimal.ZERO;
+			BigDecimal baseGrabada5 = BigDecimal.ZERO;
 			BigDecimal baseCero = BigDecimal.ZERO;
 			BigDecimal valorIva = BigDecimal.ZERO;
+			BigDecimal valorIva5 = BigDecimal.ZERO;
+			BigDecimal valorIva15 = BigDecimal.ZERO;
 			BigDecimal subtotalFac = BigDecimal.ZERO;
 			BigDecimal montoDescuento = BigDecimal.ZERO;
 			List<Line> itemsRefDesc = vendorCredit.getLine();
@@ -250,6 +255,12 @@ public class NotasCreditoQB {
 			for (Line valores : vendorCredit.getTxnTaxDetail().getTaxLine()) {
 				if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 12) {
 					baseGrabada = baseGrabada.add(valores.getTaxLineDetail().getNetAmountTaxable());
+				} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 5) {
+					baseGrabada5 = baseGrabada5.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
+				} else if (valores.getTaxLineDetail().getTaxPercent().doubleValue() == 15) {
+					baseGrabada15 = baseGrabada15.add(valores.getTaxLineDetail().getNetAmountTaxable());
+
 				} else {
 					baseCero = baseCero.add(valores.getTaxLineDetail().getNetAmountTaxable());
 
@@ -257,8 +268,9 @@ public class NotasCreditoQB {
 
 			}
 			valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
-			/*CONSULTA A QB Y OBTENER LOS DATOS*/
-			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroTextAndCodTipoambiente(notacredito.getNumeroFactura(),valoresGlobales.TIPOAMBIENTE);
+			/* CONSULTA A QB Y OBTENER LOS DATOS */
+			Optional<Factura> facturaRecup = facturaRepository.findByFacNumeroTextAndCodTipoambiente(
+					notacredito.getNumeroFactura(), valoresGlobales.TIPOAMBIENTE);
 			if (!facturaRecup.isPresent()) {
 				System.out.println(notacredito.getNumeroFactura());
 				System.out.println(valoresGlobales.TIPOAMBIENTE);
@@ -271,11 +283,26 @@ public class NotasCreditoQB {
 					valoresGlobales.getTIPOAMBIENTE().getAmRuc(), valoresGlobales.getTIPOAMBIENTE().getAmCodigo(),
 					valoresGlobales.getTIPOAMBIENTE().getAmEstab() + valoresGlobales.getTIPOAMBIENTE().getAmPtoemi(),
 					numeroRetencionText, "12345678", "1");
-			subtotalFac = baseGrabada.add(baseCero);
+
+			/* sacamos el IVA */
+			valorIva = baseGrabada.multiply(valoresGlobales.SACARIVA);
+			valorIva5 = baseGrabada5.multiply(valoresGlobales.SACARIVA5);
+			valorIva15 = baseGrabada15.multiply(valoresGlobales.SACARIVA15);
+
+			BigDecimal valorTotalIva = valorIva.add(valorIva5).add(valorIva15);
+
+			subtotalFac = baseGrabada.add(baseCero).add(baseGrabada5).add(baseGrabada15);
+//			subtotalFac = baseGrabada.add(baseCero);
+
 			notacredito.setFacSubtotal(subtotalFac);
-			BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorIva), 2);
+
+			BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorTotalIva), 2);
 			notacredito.setFacIva(valorIva);
+			notacredito.setFacIva5(valorIva5);
+			notacredito.setFacIva5(valorIva15);
+
 			notacredito.setFacTotal(valorTotalFact);
+
 			notacredito.setFacEstado("EM");
 			notacredito.setFacTipo("NCRE");
 			notacredito.setFacAbono(BigDecimal.ZERO);
@@ -290,8 +317,12 @@ public class NotasCreditoQB {
 			notacredito.setFacDescuento(BigDecimal.ZERO);
 			notacredito.setFacCodIce("3");
 			notacredito.setFacCodIva("2");
+
 			notacredito.setFacTotalBaseCero(baseCero);
 			notacredito.setFacTotalBaseGravaba(baseGrabada);
+			notacredito.setFacSubt5(baseGrabada5);
+			notacredito.setFacSubt15(baseGrabada15);
+
 			notacredito.setCodigoPorcentaje("2");
 			notacredito.setFacPorcentajeIva("12");
 			notacredito.setFacMoneda(vendorCredit.getCurrencyRef().getValue());
@@ -368,7 +399,7 @@ public class NotasCreditoQB {
 								taxRatePorcet = taxrate;
 							}
 
-						}	
+						}
 					}
 
 				}
@@ -377,6 +408,11 @@ public class NotasCreditoQB {
 						? taxRatePorcet.getRateValue().doubleValue() == 0 ? Boolean.FALSE : Boolean.TRUE
 						: Boolean.FALSE;
 
+				BigDecimal porcentaje = taxRatePorcet.getRateValue();
+				BigDecimal factorIva = (porcentaje.divide(BigDecimal.valueOf(100.0)));
+				BigDecimal factorSacarSubtotal = (factorIva.add(BigDecimal.ONE));
+				
+				
 				producto.setProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
 				producto.setProdNombre(itemProd.getDescription());
 				producto.setPordCostoCompra(BigDecimal.ZERO);
@@ -389,7 +425,7 @@ public class NotasCreditoQB {
 				producto.setProdEstado(1);
 				producto.setProdTrasnporte(BigDecimal.ZERO);
 				producto.setProdIva(BigDecimal.ZERO);
-				producto.setProdUtilidadNormal(BigDecimal.ZERO); 
+				producto.setProdUtilidadNormal(BigDecimal.ZERO);
 				producto.setProdManoObra(BigDecimal.ZERO);
 				producto.setProdUtilidadPreferencial(BigDecimal.ZERO);
 				producto.setProdCostoPreferencial(BigDecimal.ZERO);
@@ -414,7 +450,17 @@ public class NotasCreditoQB {
 				producto.setProdFactorConversion(BigDecimal.ONE);
 				producto.setProdUnidadMedida("UNIDAD");
 				producto.setProdUnidadConversion("UNIDAD");
+				if (porcentaje.intValue() == 15) {
+					producto.setProdCodigoIva(4);
+				} else if (porcentaje.intValue() == 5) {
+					producto.setProdCodigoIva(5);
+				} else {
+					producto.setProdCodigoIva(0);
+				}
 
+				producto.setProdPorcentajeIva(porcentaje.intValue());
+				
+				
 				Optional<Producto> prodRecup = productoRepository
 						.findByProdCodigo(itemProd.getSku() == null ? "001" : itemProd.getSku());
 
@@ -425,6 +471,9 @@ public class NotasCreditoQB {
 					detalle.setIdProducto(producto);
 				}
 
+				/*CODIGO PORCENTAJE Y CODIGO IVA*/
+//				detalle.setCodigoPorcentaje(item.get)
+				
 				// revision con Paul es el campo getUnitPrice
 				BigDecimal precioUnitario = item.getGroupLineDetail() != null
 						? item.getGroupLineDetail().getLine().get(0).getSalesItemLineDetail().getUnitPrice()
@@ -454,10 +503,10 @@ public class NotasCreditoQB {
 				BigDecimal ivaDet = BigDecimal.ZERO;
 
 				ivaDet = prodGrabaIva
-						? (precioConDescuento.multiply(valoresGlobales.SACARIVA).multiply(cantidadProductos))
+						? (precioConDescuento.multiply(factorIva).multiply(cantidadProductos))
 						: BigDecimal.ZERO;
 				detalle.setDetTotal(
-						prodGrabaIva ? precioConDescuento.multiply(valoresGlobales.SUMARIVA) : precioConDescuento);
+						prodGrabaIva ? precioConDescuento.multiply(factorSacarSubtotal) : precioConDescuento);
 				detalle.setDetTipoVenta("NORMAL");
 //			System.out.println("det.getDetTotal() " + det.getDetTotal());
 //			System.out.println("cantidadProductos " + cantidadProductos);
@@ -474,6 +523,20 @@ public class NotasCreditoQB {
 				detalle.setDetTipoVenta("0");
 				detalle.setCodigoProducto(itemProd.getSku() == null ? "001" : itemProd.getSku());
 				detalle.setProdGrabaIva(prodGrabaIva);
+				
+				detalle.setPorcentajeIva(porcentaje.toString());
+				
+				if (porcentaje.intValue() == 15) {
+
+					detalle.setCodigoPorcentaje("4");
+				} else if (porcentaje.intValue() == 5) {
+
+					detalle.setCodigoPorcentaje("5");
+				} else {
+					detalle.setCodigoPorcentaje("0");
+				}
+				
+				
 //				/* Detalle de factura */
 				detalleNotaCreditoRepository.save(detalle);
 
