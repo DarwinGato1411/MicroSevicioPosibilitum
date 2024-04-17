@@ -597,7 +597,7 @@ public class FacturasQB {
 
 								BigDecimal montoTotalItem = item.getGroupLineDetail() != null
 										?  item.getAmount()
-										:item.getGroupLineDetail().getLine().get(0).getAmount();
+										:BigDecimal.ZERO;
 								
 								
 								BigDecimal precioUnitario = BigDecimal.ZERO;
