@@ -596,8 +596,10 @@ public class FacturasQB {
 												: BigDecimal.ONE;
 
 								BigDecimal montoTotalItem = item.getGroupLineDetail() != null
-										? item.getGroupLineDetail().getLine().get(0).getAmount()
-										: item.getAmount();
+										?  item.getAmount()
+										:item.getGroupLineDetail().getLine().get(0).getAmount();
+								
+								
 								BigDecimal precioUnitario = BigDecimal.ZERO;
 								if (item.getGroupLineDetail() != null) {
 									precioUnitario = montoTotalItem.divide(cantidadPaquete, 5, RoundingMode.CEILING);

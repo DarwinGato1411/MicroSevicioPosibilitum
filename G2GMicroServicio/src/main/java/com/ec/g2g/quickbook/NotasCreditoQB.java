@@ -299,7 +299,7 @@ public class NotasCreditoQB {
 			BigDecimal valorTotalFact = ArchivoUtils.redondearDecimales(subtotalFac.add(valorTotalIva), 2);
 			notacredito.setFacIva(valorIva);
 			notacredito.setFacIva5(valorIva5);
-			notacredito.setFacIva5(valorIva15);
+			notacredito.setFacIva15(valorIva15);
 
 			notacredito.setFacTotal(valorTotalFact);
 
